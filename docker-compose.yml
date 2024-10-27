@@ -10,7 +10,18 @@ services:
       - DB_CONN=todo.db
       - MONGO_URI=mongodb://mongo:27017/todo
       - HOST=http://localhost:8080
+      - GIN_MODE=release
   mongo:
     image: mongo:6
+  alot:
+    build:
+      context: ./cmd/alot/
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - API_URL=http://my-app:8080/transfer/"
+      - GIN_MODE=release
 
 

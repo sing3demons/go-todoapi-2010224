@@ -114,6 +114,10 @@ func main() {
 	r.GET("/", func(c *gin.Context) {
 		const max = 10000
 		const maxConcurrency = 1000
+		var url = os.Getenv("API_URL")
+		if url == "" {
+			url = "http://localhost:8080/transfer/"
+		}
 
 		start := time.Now()
 		var wg sync.WaitGroup
@@ -147,7 +151,7 @@ func main() {
 				successCh <- response
 				// makeRequest(id, successCh, failCh)
 				<-semaphore // Release semaphore
-			}(fmt.Sprintf("http://localhost:8080/transfer/%d", id))
+			}(url + strconv.Itoa(id))
 		}
 
 		// Close channels once all goroutines are done
