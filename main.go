@@ -51,17 +51,13 @@ func main() {
 	slog.Info("Starting server...")
 
 	r := router.NewFiberRouter(log)
-
 	r.GET("/healthz", Healthz)
-
 	r.GET("/x", X)
-
 	r.GET("/ping", PingHandler)
 	r.GET("/transfer/:id", Transfer)
 
 	conn := db{}
 	defer conn.Close()
-
 	todoHandler := todo.NewTodoHandler(conn.MongoStore())
 	r.POST("/todo", todoHandler.NewTask)
 	r.GET("/todo/:id", todoHandler.FindOne)

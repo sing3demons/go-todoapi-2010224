@@ -14,32 +14,27 @@ type TestContext struct {
 	v map[string]interface{}
 }
 
+const sessionHeader = "x-session"
+
 func (t *TestContext) Bind(v interface{}) error {
 	*v.(*todo.Todo) = todo.Todo{Title: "sleep"}
 	return nil
 }
-func (t *TestContext) JSON(code int, v interface{}) {
-	t.v = v.(map[string]interface{})
-}
-func (t *TestContext) Log() *logger.Logger {
-	return logger.New(slog.Default(), nil)
-}
-func (t *TestContext) Get(string) interface{} { return nil }
-func (t *TestContext) TransactionID() string  { return "" }
-func (t *TestContext) Param(string) string    { return "" }
+func (t *TestContext) JSON(code int, v interface{}) { t.v = v.(map[string]interface{}) }
+func (t *TestContext) Log() *logger.Logger          { return logger.New(slog.Default(), nil) }
+func (t *TestContext) Get(string) interface{}       { return nil }
+func (t *TestContext) TransactionID() string        { return "" }
+func (t *TestContext) Param(string) string          { return "" }
 
 type TestDB struct{}
 
 func (*TestDB) Create(*todo.Todo) error { return nil }
-
 func (*TestDB) List() ([]todo.Todo, error) { return nil, nil }
-
 func (*TestDB) Delete(id string) error { return nil }
 
 func TestPing(t *testing.T) {
-
 	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/ping", nil)
-	req.Header.Set("x-session", "test")
+	req.Header.Set(sessionHeader, "test-ping")
 	w := httptest.NewRecorder()
 	c := &TestContext{}
 
@@ -59,7 +54,7 @@ func TestPing(t *testing.T) {
 
 func TestX(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/x", nil)
-	req.Header.Set("x-session", "test")
+	req.Header.Set(sessionHeader, "test-x")
 	w := httptest.NewRecorder()
 	c := &TestContext{}
 
@@ -72,7 +67,7 @@ func TestX(t *testing.T) {
 
 func TestHealth(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/health", nil)
-	req.Header.Set("x-session", "test")
+	req.Header.Set(sessionHeader, "test-health")
 	w := httptest.NewRecorder()
 	c := &TestContext{}
 
@@ -91,7 +86,7 @@ func TestHealth(t *testing.T) {
 
 func TestTransfer(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/transfer/1", nil)
-	req.Header.Set("x-session", "test")
+	req.Header.Set(sessionHeader, "test-")
 	w := httptest.NewRecorder()
 	c := &TestContext{}
 

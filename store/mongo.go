@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongoStore struct {
@@ -32,6 +33,11 @@ func (g *MongoStore) Create(todo *todo.Todo) error {
 	return err
 }
 
+var projection = bson.D{
+	{Key: "id", Value: 1},
+	{Key: "title", Value: 1},
+}
+
 func (g *MongoStore) List() ([]todo.Todo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -39,7 +45,10 @@ func (g *MongoStore) List() ([]todo.Todo, error) {
 	filter := bson.D{
 		{Key: "deleted_at", Value: nil},
 	}
-	cur, err := g.Collection.Find(ctx, filter)
+	opts := &options.FindOptions{
+		Projection: projection,
+	}
+	cur, err := g.Collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +58,7 @@ func (g *MongoStore) List() ([]todo.Todo, error) {
 	}
 
 	for i := range todos {
-		todos[i].Href = fmt.Sprintf("%s/todo/%s", os.Getenv("HOST"), todos[i].ID)
+		todos[i].Href = g.getHref(todos[i].ID)
 	}
 
 	return todos, nil
@@ -73,11 +82,18 @@ func (g *MongoStore) FindOne(id string) (*todo.Todo, error) {
 		{Key: "deleted_at", Value: nil},
 		{Key: "id", Value: id},
 	}
-	err := g.Collection.FindOne(ctx, filter).Decode(&todo)
+	opts := &options.FindOneOptions{
+		Projection: projection,
+	}
+	err := g.Collection.FindOne(ctx, filter, opts).Decode(&todo)
 	if err != nil {
 		return nil, err
 	}
 
-	todo.Href = fmt.Sprintf("%s/todo/%s", os.Getenv("HOST"), todo.ID)
+	todo.Href = g.getHref(todo.ID)
 	return &todo, nil
+}
+
+func (g *MongoStore) getHref(id string) string {
+	return fmt.Sprintf("%s/todo/%s", os.Getenv("HOST"), id)
 }
