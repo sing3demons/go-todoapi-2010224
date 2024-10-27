@@ -13,7 +13,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/sing3demons/todoapi/logger"
-	"github.com/sing3demons/todoapi/todo"
 )
 
 type FiberContext struct {
@@ -88,7 +87,7 @@ func (c *FiberContext) Param(key string) string {
 	return c.Ctx.Params(key)
 }
 
-func NewFiberHandler(handler func(todo.IContext)) fiber.Handler {
+func NewFiberHandler(handler func(IContext)) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		handler(NewFiberContext(c))
 		return nil
@@ -103,49 +102,49 @@ type FiberRouter struct {
 // 	return r.App.Listen(addr)
 // }
 
-func (r *FiberRouter) GET(path string, h func(todo.IContext)) {
+func (r *FiberRouter) GET(path string, h func(IContext)) {
 	r.App.Get(path, func(c *fiber.Ctx) error {
 		h(NewFiberContext(c))
 		return nil
 	})
 }
 
-func (r *FiberRouter) POST(path string, h func(todo.IContext)) {
+func (r *FiberRouter) POST(path string, h func(IContext)) {
 	r.App.Post(path, func(c *fiber.Ctx) error {
 		h(NewFiberContext(c))
 		return nil
 	})
 }
 
-func (r *FiberRouter) DELETE(path string, h func(todo.IContext)) {
+func (r *FiberRouter) DELETE(path string, h func(IContext)) {
 	r.App.Delete(path, func(c *fiber.Ctx) error {
 		h(NewFiberContext(c))
 		return nil
 	})
 }
 
-func (r *FiberRouter) PUT(path string, h func(todo.IContext)) {
+func (r *FiberRouter) PUT(path string, h func(IContext)) {
 	r.App.Put(path, func(c *fiber.Ctx) error {
 		h(NewFiberContext(c))
 		return nil
 	})
 }
 
-func (r *FiberRouter) PATCH(path string, h func(todo.IContext)) {
+func (r *FiberRouter) PATCH(path string, h func(IContext)) {
 	r.App.Patch(path, func(c *fiber.Ctx) error {
 		h(NewFiberContext(c))
 		return nil
 	})
 }
 
-func (r *FiberRouter) Use(h func(todo.IContext)) {
+func (r *FiberRouter) Use(h func(IContext)) {
 	r.App.Use(func(c *fiber.Ctx) error {
 		h(NewFiberContext(c))
 		return nil
 	})
 }
 
-func (r *FiberRouter) Group(path string, h func(todo.IContext)) {
+func (r *FiberRouter) Group(path string, h func(IContext)) {
 	r.App.Group(path, func(c *fiber.Ctx) error {
 		h(NewFiberContext(c))
 		return nil

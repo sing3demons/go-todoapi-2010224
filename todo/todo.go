@@ -3,57 +3,25 @@ package todo
 import (
 	"log/slog"
 	"net/http"
-	"time"
 
-	"github.com/sing3demons/todoapi/logger"
+	"github.com/sing3demons/todoapi/model"
+	"github.com/sing3demons/todoapi/router"
+	"github.com/sing3demons/todoapi/store"
 )
 
-type NullTime struct {
-	Time time.Time
-}
-
-type Todo struct {
-	ID        string     `gorm:"primarykey" json:"id" bson:"id"`
-	Title     string     `json:"text" binding:"required"`
-	Href      string     `json:"href,omitempty"`
-	CreatedAt time.Time  `json:"-" bson:"created_at,omitempty"`
-	UpdatedAt time.Time  `json:"-" bson:"updated_at,omitempty"`
-	DeletedAt *time.Time `gorm:"index" json:"-" bson:"deleted_at,omitempty"`
-}
-
-func (Todo) TableName() string {
-	return "todos"
-}
-
-type storer interface {
-	Create(*Todo) error
-	List() ([]Todo, error)
-	Delete(string) error
-	FindOne(id string) (*Todo, error)
-}
-
 type TodoHandler struct {
-	store storer
+	store store.Storer
 }
 
-type IContext interface {
-	Bind(interface{}) error
-	JSON(int, interface{})
-	Log() *logger.Logger
-	Get(string) interface{}
-	TransactionID() string
-	Param(string) string
-}
-
-func NewTodoHandler(store storer) *TodoHandler {
+func NewTodoHandler(store store.Storer) *TodoHandler {
 	return &TodoHandler{store: store}
 }
 
-func (t *TodoHandler) NewTask(c IContext) {
+func (t *TodoHandler) NewTask(c router.IContext) {
 	cmd := "new task"
 	node := "client"
 	logger := c.Log()
-	var todo Todo
+	var todo model.Todo
 	if err := c.Bind(&todo); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]any{
 			"error": err.Error(),
@@ -86,7 +54,7 @@ func (t *TodoHandler) NewTask(c IContext) {
 	})
 }
 
-func (t *TodoHandler) List(c IContext) {
+func (t *TodoHandler) List(c router.IContext) {
 	cmd := "list task"
 	logger := c.Log()
 	todos, err := t.store.List()
@@ -103,7 +71,7 @@ func (t *TodoHandler) List(c IContext) {
 	c.JSON(http.StatusOK, todos)
 }
 
-func (t *TodoHandler) Remove(c IContext) {
+func (t *TodoHandler) Remove(c router.IContext) {
 	logger := c.Log()
 	idParam := c.Param("id")
 	cmd := "remove task"
@@ -129,7 +97,7 @@ func (t *TodoHandler) Remove(c IContext) {
 	c.JSON(http.StatusOK, data)
 }
 
-func (t *TodoHandler) FindOne(c IContext) {
+func (t *TodoHandler) FindOne(c router.IContext) {
 	logger := c.Log()
 	idParam := c.Param("id")
 	cmd := "find task"

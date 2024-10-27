@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/sing3demons/todoapi/logger"
+	"github.com/sing3demons/todoapi/model"
 )
 
 type TestContext struct {
@@ -12,7 +13,7 @@ type TestContext struct {
 }
 
 func (t *TestContext) Bind(v interface{}) error {
-	*v.(*Todo) = Todo{Title: "sleep"}
+	*v.(*model.Todo) = model.Todo{Title: "sleep"}
 	return nil
 }
 func (t *TestContext) JSON(code int, v interface{}) {
@@ -27,13 +28,13 @@ func (t *TestContext) Param(string) string    { return "" }
 
 type TestDB struct{}
 
-func (*TestDB) Create(*Todo) error { return nil }
+func (*TestDB) Create(*model.Todo) error { return nil }
 
-func (*TestDB) List() ([]Todo, error) { return nil, nil }
+func (*TestDB) List() ([]model.Todo, error) { return nil, nil }
 
 func (*TestDB) Delete(id string) error { return nil }
-func (*TestDB) FindOne(id string) (*Todo, error) {
-	return &Todo{Title: "sleep"}, nil
+func (*TestDB) FindOne(id string) (*model.Todo, error) {
+	return &model.Todo{Title: "sleep"}, nil
 }
 
 // func TestCreateTodo(t *testing.T) {

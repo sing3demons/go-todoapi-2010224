@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/sing3demons/todoapi/todo"
+	"github.com/sing3demons/todoapi/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,7 +21,7 @@ func NewMongoStore(db *mongo.Collection) *MongoStore {
 	return &MongoStore{db}
 }
 
-func (g *MongoStore) Create(todo *todo.Todo) error {
+func (g *MongoStore) Create(todo *model.Todo) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	todo.ID = primitive.NewObjectID().Hex()
@@ -38,10 +38,10 @@ var projection = bson.D{
 	{Key: "title", Value: 1},
 }
 
-func (g *MongoStore) List() ([]todo.Todo, error) {
+func (g *MongoStore) List() ([]model.Todo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	var todos []todo.Todo
+	var todos []model.Todo
 	filter := bson.D{
 		{Key: "deleted_at", Value: nil},
 	}
@@ -74,10 +74,10 @@ func (g *MongoStore) Delete(id string) error {
 	return err
 }
 
-func (g *MongoStore) FindOne(id string) (*todo.Todo, error) {
+func (g *MongoStore) FindOne(id string) (*model.Todo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	var todo todo.Todo
+	var todo model.Todo
 	filter := bson.D{
 		{Key: "deleted_at", Value: nil},
 		{Key: "id", Value: id},

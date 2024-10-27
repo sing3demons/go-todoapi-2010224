@@ -14,7 +14,6 @@ import (
 
 	"github.com/sing3demons/todoapi/logger"
 	"github.com/sing3demons/todoapi/mlog"
-	"github.com/sing3demons/todoapi/todo"
 )
 
 type MyContext struct {
@@ -63,7 +62,7 @@ func (c *MyContext) Param(key string) string {
 	return c.Context.Param(key)
 }
 
-func NewGinHandler(handler func(todo.IContext)) gin.HandlerFunc {
+func NewGinHandler(handler func(IContext)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		handler(NewMyContext(c))
 	}
@@ -80,23 +79,23 @@ func NewMyRouter(logger *slog.Logger) *MyRouter {
 	return &MyRouter{r}
 }
 
-func (r *MyRouter) GET(path string, handler func(todo.IContext)) {
+func (r *MyRouter) GET(path string, handler func(IContext)) {
 	r.Engine.GET(path, NewGinHandler(handler))
 }
 
-func (r *MyRouter) POST(path string, handler func(todo.IContext)) {
+func (r *MyRouter) POST(path string, handler func(IContext)) {
 	r.Engine.POST(path, NewGinHandler(handler))
 }
 
-func (r *MyRouter) DELETE(path string, handler func(todo.IContext)) {
+func (r *MyRouter) DELETE(path string, handler func(IContext)) {
 	r.Engine.DELETE(path, NewGinHandler(handler))
 }
 
-func (r *MyRouter) PUT(path string, handler func(todo.IContext)) {
+func (r *MyRouter) PUT(path string, handler func(IContext)) {
 	r.Engine.PUT(path, NewGinHandler(handler))
 }
 
-func (r *MyRouter) PATCH(path string, handler func(todo.IContext)) {
+func (r *MyRouter) PATCH(path string, handler func(IContext)) {
 	r.Engine.PATCH(path, NewGinHandler(handler))
 }
 

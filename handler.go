@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sing3demons/todoapi/todo"
+	"github.com/sing3demons/todoapi/router"
 )
 
-func PingHandler(c todo.IContext) {
+func PingHandler(c router.IContext) {
 	logger := c.Log()
 
 	data := map[string]interface{}{
@@ -19,18 +19,18 @@ func PingHandler(c todo.IContext) {
 	c.JSON(200, data)
 }
 
-func X(c todo.IContext) {
+func X(c router.IContext) {
 	c.JSON(200, map[string]any{
 		"buildcommit": buildcommit,
 		"buildtime":   buildtime,
 	})
 }
 
-func Healthz(c todo.IContext) {
+func Healthz(c router.IContext) {
 	c.JSON(http.StatusOK, map[string]any{"status": "ok"})
 }
 
-func Transfer(c todo.IContext) {
+func Transfer(c router.IContext) {
 	logger := c.Log()
 	id := c.Param("id")
 

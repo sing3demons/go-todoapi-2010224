@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/sing3demons/todoapi/logger"
-	"github.com/sing3demons/todoapi/todo"
+	"github.com/sing3demons/todoapi/model"
 )
 
 type TestContext struct {
@@ -17,7 +17,7 @@ type TestContext struct {
 const sessionHeader = "x-session"
 
 func (t *TestContext) Bind(v interface{}) error {
-	*v.(*todo.Todo) = todo.Todo{Title: "sleep"}
+	*v.(*model.Todo) = model.Todo{Title: "sleep"}
 	return nil
 }
 func (t *TestContext) JSON(code int, v interface{}) { t.v = v.(map[string]interface{}) }
@@ -28,9 +28,9 @@ func (t *TestContext) Param(string) string          { return "" }
 
 type TestDB struct{}
 
-func (*TestDB) Create(*todo.Todo) error { return nil }
-func (*TestDB) List() ([]todo.Todo, error) { return nil, nil }
-func (*TestDB) Delete(id string) error { return nil }
+func (*TestDB) Create(*model.Todo) error    { return nil }
+func (*TestDB) List() ([]model.Todo, error) { return nil, nil }
+func (*TestDB) Delete(id string) error      { return nil }
 
 func TestPing(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/ping", nil)
