@@ -13,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/joho/godotenv"
-	"github.com/sing3demons/todoapi/mlog"
 	"github.com/sing3demons/todoapi/router"
 	"github.com/sing3demons/todoapi/store"
 	"github.com/sing3demons/todoapi/todo"
@@ -76,28 +75,26 @@ func main() {
 	slog.Info("Starting server...")
 	// log json
 
-	r := gin.New()
-	r.Use(gin.Recovery())
-	r.Use(mlog.Middleware(log))
+	r := router.NewMyRouter(log)
 
-	r.GET("/healthz", func(c *gin.Context) {
-		c.Status(200)
-	})
+	// r.GET("/healthz", func(c *gin.Context) {
+	// 	c.Status(200)
+	// })
 
-	r.GET("/x", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"buildcommit": buildcommit,
-			"buildtime":   buildtime,
-		})
-	})
+	// r.GET("/x", func(c *gin.Context) {
+	// 	c.JSON(200, gin.H{
+	// 		"buildcommit": buildcommit,
+	// 		"buildtime":   buildtime,
+	// 	})
+	// })
 
-	r.GET("/ping", PingHandler)
-	r.GET("/transfer/:id", Transfer)
+	// r.GET("/ping", PingHandler)
+	// r.GET("/transfer/:id", Transfer)
 
 	gormStore := store.NewGormStore(db)
 	todoHandler := todo.NewTodoHandler(gormStore)
-	r.POST("/todo", router.NewGinHandler(todoHandler.NewTask))
-	r.GET("/todo", router.NewGinHandler(todoHandler.List))
+	r.POST("/todo", todoHandler.NewTask)
+	r.GET("/todo", todoHandler.List)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -131,10 +128,9 @@ func main() {
 
 }
 
-func Transfer(c *gin.Context) {
-	logger := log.With(slog.String("session", c.GetString(mlog.Session)))
+func Transfer(c todo.IContext) {
+	logger := c.Log()
 	id := c.Param("id")
-	device := c.Request.UserAgent()
 
 	logger.Info("parsing...", slog.String("id", id))
 	time.Sleep(time.Millisecond * 200)
@@ -154,8 +150,8 @@ func Transfer(c *gin.Context) {
 	time.Sleep(time.Millisecond * 100)
 
 	data := gin.H{"message": "success" + id,
-		"id":     id,
-		"device": device}
+		"id": id,
+	}
 	logger.Info("finish", slog.Any("data", data))
 	c.JSON(http.StatusOK, data)
 }

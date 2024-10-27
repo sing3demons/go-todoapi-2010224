@@ -13,7 +13,6 @@ type TestContext struct {
 
 func (t *TestContext) Bind(v interface{}) error {
 	*v.(*Todo) = Todo{Title: "sleep"}
-	// v.(*Todo).Title = "sleep"
 	return nil
 }
 func (t *TestContext) JSON(code int, v interface{}) {
@@ -37,8 +36,7 @@ func (*TestDB) Delete(id int) error { return nil }
 func TestCreateTodoNotAllowSleep(t *testing.T) {
 	handler := NewTodoHandler(&TestDB{})
 	c := &TestContext{}
-	// c.Bind(Todo{Title: "sleep"})
-	handler.NewTask(c)
+ 	handler.NewTask(c)
 
 	want := "not allowed"
 	if c.v["error"] != want {

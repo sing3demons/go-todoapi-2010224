@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sing3demons/todoapi/logger"
+	"github.com/sing3demons/todoapi/mlog"
 	"github.com/sing3demons/todoapi/todo"
 )
 
@@ -58,4 +59,23 @@ func NewGinHandler(handler func(todo.IContext)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		handler(NewMyContext(c))
 	}
+}
+
+type MyRouter struct {
+	*gin.Engine
+}
+
+func NewMyRouter(logger *slog.Logger) *MyRouter {
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(mlog.Middleware(logger))
+	return &MyRouter{r}
+}
+
+func (r *MyRouter) GET(path string, handler func(todo.IContext)) {
+	r.Engine.GET(path, NewGinHandler(handler))
+}
+
+func (r *MyRouter) POST(path string, handler func(todo.IContext)) {
+	r.Engine.POST(path, NewGinHandler(handler))
 }
