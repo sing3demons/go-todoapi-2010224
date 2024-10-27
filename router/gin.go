@@ -32,7 +32,7 @@ func (c *MyContext) JSON(code int, v any) {
 	c.Context.JSON(code, v)
 }
 
-func (c *MyContext) Log() *logger.Logger {
+func (c *MyContext) Log(name string) *logger.Logger {
 	route := c.FullPath()
 	method := c.Request.Method
 	device := c.Context.Request.UserAgent()
@@ -43,9 +43,9 @@ func (c *MyContext) Log() *logger.Logger {
 	}
 	switch l := c.Value("logger").(type) {
 	case *slog.Logger:
-		return logger.New(l, attribute)
+		return logger.New(l, name, attribute)
 	default:
-		return logger.New(slog.Default(), attribute)
+		return logger.New(slog.Default(), name, attribute)
 	}
 }
 

@@ -57,7 +57,7 @@ func (c *FiberContext) JSON(code int, v any) {
 	c.Ctx.JSON(v)
 }
 
-func (c *FiberContext) Log() *logger.Logger {
+func (c *FiberContext) Log(name string) *logger.Logger {
 	route := c.Ctx.Route().Path
 	method := c.Ctx.Method()
 	device := c.Ctx.Get("User-Agent")
@@ -69,9 +69,9 @@ func (c *FiberContext) Log() *logger.Logger {
 
 	switch l := c.Ctx.Locals("logger").(type) {
 	case *slog.Logger:
-		return logger.New(l, attribute)
+		return logger.New(l, name, attribute)
 	default:
-		return logger.New(slog.Default(), attribute)
+		return logger.New(slog.Default(), name, attribute)
 	}
 }
 

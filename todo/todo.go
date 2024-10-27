@@ -1,6 +1,7 @@
 package todo
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -20,7 +21,7 @@ func NewTodoHandler(store store.Storer) *TodoHandler {
 func (t *TodoHandler) NewTask(c router.IContext) {
 	cmd := "new task"
 	node := "client"
-	logger := c.Log()
+	logger := c.Log("new_task")
 	var todo model.Todo
 	if err := c.Bind(&todo); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]any{
@@ -28,10 +29,12 @@ func (t *TodoHandler) NewTask(c router.IContext) {
 		})
 		return
 	}
-	logger.AddEvent(node, cmd, todo)
+	logger.AddInput(node, cmd, todo)
 
 	if todo.Title == "sleep" {
-		logger.Error(cmd, slog.Any("error", "not allowed"))
+		logger.AddError(node, cmd, "output", map[string]any{
+			"error": "not allowed",
+		}, fmt.Errorf("not allowed"))
 		c.JSON(http.StatusBadRequest, map[string]any{
 			"error": "not allowed",
 		})
@@ -46,7 +49,7 @@ func (t *TodoHandler) NewTask(c router.IContext) {
 		return
 	}
 
-	logger.Info(cmd, slog.Any("data", todo))
+	logger.AddOutput(node, cmd, todo)
 	logger.End()
 
 	c.JSON(http.StatusCreated, map[string]any{
@@ -56,7 +59,8 @@ func (t *TodoHandler) NewTask(c router.IContext) {
 
 func (t *TodoHandler) List(c router.IContext) {
 	cmd := "list task"
-	logger := c.Log()
+	logger := c.Log("tasks_list")
+	logger.AddInput("client", cmd, nil)
 	todos, err := t.store.List()
 	if err != nil {
 		logger.Error(cmd, slog.Any("error", err))
@@ -66,13 +70,13 @@ func (t *TodoHandler) List(c router.IContext) {
 		return
 	}
 
-	logger.AddEvent("client", cmd, todos)
+	logger.AddOutput("client", cmd, todos)
 	logger.End()
 	c.JSON(http.StatusOK, todos)
 }
 
 func (t *TodoHandler) Remove(c router.IContext) {
-	logger := c.Log()
+	logger := c.Log("remove_task")
 	idParam := c.Param("id")
 	cmd := "remove task"
 
@@ -98,7 +102,7 @@ func (t *TodoHandler) Remove(c router.IContext) {
 }
 
 func (t *TodoHandler) FindOne(c router.IContext) {
-	logger := c.Log()
+	logger := c.Log("find_task")
 	idParam := c.Param("id")
 	cmd := "find task"
 

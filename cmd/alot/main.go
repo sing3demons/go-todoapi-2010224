@@ -108,7 +108,16 @@ func (s *service) NewSemaphore() (semaphore chan struct{}) {
 }
 
 func Api(c *gin.Context) {
-	const max = 10000
+	var max = 10000
+	x := c.Query("x")
+	if x != "" {
+		xx, err := strconv.Atoi(x)
+		if err == nil {
+			max = xx
+		}
+	}
+	fmt.Println("max", max)
+
 	const maxConcurrency = 1000
 	var url = os.Getenv("API_URL")
 	if url == "" {
@@ -188,9 +197,14 @@ func Api(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success_count": len(result),
 		"fail_count":    failCount,
-		"responses":     result[:100],
-		"errors":        failures,
-		"elapsed":       time.Since(start).String(),
+		"responses": func() []responseMessage {
+			if len(result) > 100 {
+				return result[:100]
+			}
+			return result
+		}(),
+		"errors":  failures,
+		"elapsed": time.Since(start).String(),
 	})
 }
 

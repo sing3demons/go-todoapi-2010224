@@ -9,7 +9,7 @@ import (
 )
 
 func PingHandler(c router.IContext) {
-	logger := c.Log()
+	logger := c.Log("ping")
 
 	data := map[string]interface{}{
 		"message": "pong",
@@ -31,8 +31,13 @@ func Healthz(c router.IContext) {
 }
 
 func Transfer(c router.IContext) {
-	logger := c.Log()
+	logger := c.Log("transfer")
 	id := c.Param("id")
+	node := "client"
+	cmd := "transfer"
+
+	param := map[string]any{"id": id}
+	logger.AddInput(node, cmd, param)
 
 	logger.Info("parsing...", slog.String("id", id))
 	time.Sleep(time.Millisecond * 200)
@@ -54,6 +59,7 @@ func Transfer(c router.IContext) {
 	data := map[string]any{"message": "success" + id,
 		"id": id,
 	}
-	logger.Info("finish", slog.Any("data", data))
+	logger.AddOutput(node, cmd, data)
+	logger.End()
 	c.JSON(http.StatusOK, data)
 }
