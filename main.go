@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/joho/godotenv"
 	"github.com/sing3demons/todoapi/router"
@@ -58,12 +58,7 @@ func init() {
 	slog.SetDefault(log)
 }
 
-func main() {
-	err := godotenv.Load("local.env")
-	if err != nil {
-		log.Error("Error loading .env file")
-	}
-
+func connectDB() *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(os.Getenv("DB_CONN")), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
@@ -72,60 +67,62 @@ func main() {
 	if err := db.AutoMigrate(&todo.Todo{}); err != nil {
 		log.Error("failed to migrate", slog.Any("error", err))
 	}
+	return db
+}
+
+func connectMongo() *mongo.Collection {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	uri := os.Getenv("MONGO_URI")
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	if err != nil {
+		log.Error("failed to connect mongodb", slog.Any("error", err))
+	}
+	collection := client.Database("myapp").Collection("todos")
+	collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{bson.E{Key: "id", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys: bson.D{bson.E{Key: "created_at", Value: 1}},
+		},
+	})
+	// defer client.Disconnect(ctx)
+	return collection
+}
+
+func main() {
+	err := godotenv.Load("local.env")
+	if err != nil {
+		log.Error("Error loading .env file")
+	}
+
 	slog.Info("Starting server...")
-	// log json
 
 	r := router.NewMyRouter(log)
 
-	// r.GET("/healthz", func(c *gin.Context) {
-	// 	c.Status(200)
-	// })
+	r.GET("/healthz", func(c todo.IContext) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
-	// r.GET("/x", func(c *gin.Context) {
-	// 	c.JSON(200, gin.H{
-	// 		"buildcommit": buildcommit,
-	// 		"buildtime":   buildtime,
-	// 	})
-	// })
+	r.GET("/x", func(c todo.IContext) {
+		c.JSON(200, gin.H{
+			"buildcommit": buildcommit,
+			"buildtime":   buildtime,
+		})
+	})
 
-	// r.GET("/ping", PingHandler)
-	// r.GET("/transfer/:id", Transfer)
+	r.GET("/ping", PingHandler)
+	r.GET("/transfer/:id", Transfer)
 
-	gormStore := store.NewGormStore(db)
-	todoHandler := todo.NewTodoHandler(gormStore)
+	// store := store.NewGormStore(connectDB())
+	store := store.NewMongoStore(connectMongo())
+	todoHandler := todo.NewTodoHandler(store)
 	r.POST("/todo", todoHandler.NewTask)
 	r.GET("/todo", todoHandler.List)
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	s := &http.Server{
-		Addr:           ":" + os.Getenv("PORT"),
-		Handler:        r,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
-		MaxHeaderBytes: 1 << 20,
-	}
-
-	go func() {
-		fmt.Println("server started at", s.Addr)
-		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Error("listen", slog.Any("error", err))
-			os.Exit(1)
-		}
-	}()
-
-	<-ctx.Done()
-	stop()
-	fmt.Println("shutting down gracefully, press Ctrl+C again to force")
-
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := s.Shutdown(timeoutCtx); err != nil {
-		fmt.Println(err)
-	}
-
+	r.Run()
 }
 
 func Transfer(c todo.IContext) {

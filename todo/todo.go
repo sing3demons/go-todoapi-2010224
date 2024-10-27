@@ -3,23 +3,21 @@ package todo
 import (
 	"log/slog"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/sing3demons/todoapi/logger"
 )
 
 type NullTime struct {
-	Time  time.Time
-	Valid bool // Valid is true if Time is not NULL
+	Time time.Time
 }
 
 type Todo struct {
-	Title     string `json:"text" binding:"required"`
-	ID        uint   `gorm:"primarykey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	// DeletedAt NullTime `gorm:"index"`
+	Title     string     `json:"text" binding:"required"`
+	ID        string     `gorm:"primarykey" json:"id" bson:"id"`
+	CreatedAt time.Time  `json:"created_at" bson:"created_at,omitempty"`
+	UpdatedAt time.Time  `json:"updated_at" bson:"updated_at,omitempty"`
+	DeletedAt *time.Time `gorm:"index" json:"-" bson:"deleted_at,omitempty"`
 }
 
 func (Todo) TableName() string {
@@ -29,7 +27,7 @@ func (Todo) TableName() string {
 type storer interface {
 	Create(*Todo) error
 	List() ([]Todo, error)
-	Delete(int) error
+	Delete(string) error
 }
 
 type TodoHandler struct {
@@ -110,16 +108,7 @@ func (t *TodoHandler) Remove(c IContext) {
 
 	logger.Info(cmd, slog.Group("param", slog.String("id", idParam)))
 
-	id, err := strconv.Atoi(idParam)
-	if err != nil {
-		logger.Error(cmd, slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, map[string]any{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	err = t.store.Delete(id)
+	err := t.store.Delete(idParam)
 	if err != nil {
 		logger.Error(cmd, slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, map[string]any{
@@ -129,7 +118,7 @@ func (t *TodoHandler) Remove(c IContext) {
 	}
 
 	data := map[string]any{
-		"ID":     id,
+		"ID":     idParam,
 		"status": "success",
 	}
 

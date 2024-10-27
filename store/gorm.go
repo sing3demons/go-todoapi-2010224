@@ -14,6 +14,7 @@ func NewGormStore(db *gorm.DB) *GormStore {
 }
 
 func (g *GormStore) Create(todo *todo.Todo) error {
+	// todo.DeletedAt = nil
 	return g.db.Create(todo).Error
 }
 
@@ -26,6 +27,6 @@ func (g *GormStore) List() ([]todo.Todo, error) {
 	return todos, nil
 }
 
-func (g *GormStore) Delete(id int) error {
+func (g *GormStore) Delete(id string) error {
 	return g.db.Delete(&todo.Todo{}, id).Error
 }

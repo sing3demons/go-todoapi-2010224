@@ -31,12 +31,12 @@ func (*TestDB) Create(*Todo) error { return nil }
 
 func (*TestDB) List() ([]Todo, error) { return nil, nil }
 
-func (*TestDB) Delete(id int) error { return nil }
+func (*TestDB) Delete(id string) error { return nil }
 
 func TestCreateTodoNotAllowSleep(t *testing.T) {
 	handler := NewTodoHandler(&TestDB{})
 	c := &TestContext{}
- 	handler.NewTask(c)
+	handler.NewTask(c)
 
 	want := "not allowed"
 	if c.v["error"] != want {
