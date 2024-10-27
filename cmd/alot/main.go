@@ -107,93 +107,98 @@ func (s *service) NewSemaphore() (semaphore chan struct{}) {
 	return make(chan struct{}, maxConcurrency)
 }
 
+func Api(c *gin.Context) {
+	const max = 10000
+	const maxConcurrency = 1000
+	var url = os.Getenv("API_URL")
+	if url == "" {
+		url = "http://localhost:8080/transfer/"
+	}
+
+	start := time.Now()
+	var wg sync.WaitGroup
+	// semaphore := make(chan struct{}, maxConcurrency)   // Semaphore channel for concurrency control
+	h := NewHttp(max)
+	h.maxConcurrency = maxConcurrency
+	semaphore := h.NewSemaphore()
+
+	successCh := make(chan responseMessage, max)
+	failCh := make(chan failedRequest, max)
+
+	// Launch goroutines for requests with concurrency control
+	for id := 1; id <= max; id++ {
+		wg.Add(1)
+		go func(id string) {
+			defer wg.Done()
+			semaphore <- struct{}{} // Acquire semaphore
+
+			result, err := h.Call(id)
+			if err != nil {
+				failCh <- failedRequest{ID: id, Error: err.Error()}
+				return
+			}
+
+			var response responseMessage
+			if err := json.Unmarshal(result, &response); err != nil {
+				failCh <- failedRequest{ID: id, Error: err.Error()}
+				return
+			}
+
+			successCh <- response
+			// makeRequest(id, successCh, failCh)
+			<-semaphore // Release semaphore
+		}(url + strconv.Itoa(id))
+	}
+
+	// Close channels once all goroutines are done
+	go func() {
+		wg.Wait()
+		close(successCh)
+		close(failCh)
+	}()
+
+	// Collect responses
+	var failCount uint
+	var result []responseMessage
+	var failures []failedRequest
+
+	for response := range successCh {
+		result = append(result, response)
+	}
+
+	for failure := range failCh {
+		failures = append(failures, failure)
+		failCount++
+	}
+
+	// Log completion and time taken
+	slog.Info("finish",
+		slog.String("elapsed", time.Since(start).String()),
+		slog.Int("success_count", len(result)),
+		slog.Any("fail_count", failCount))
+
+	// sort result asc
+	sort.Slice(result, func(i, j int) bool {
+		a, _ := strconv.Atoi(result[i].ID)
+		b, _ := strconv.Atoi(result[j].ID)
+		return a > b
+
+	})
+	// Return the result as JSON
+	c.JSON(http.StatusOK, gin.H{
+		"success_count": len(result),
+		"fail_count":    failCount,
+		"responses":     result[:100],
+		"errors":        failures,
+		"elapsed":       time.Since(start).String(),
+	})
+}
+
 func main() {
 	r := gin.New()
 	r.Use(gin.Recovery())
 
-	r.GET("/", func(c *gin.Context) {
-		const max = 10000
-		const maxConcurrency = 1000
-		var url = os.Getenv("API_URL")
-		if url == "" {
-			url = "http://localhost:8080/transfer/"
-		}
-
-		start := time.Now()
-		var wg sync.WaitGroup
-		// semaphore := make(chan struct{}, maxConcurrency)   // Semaphore channel for concurrency control
-		h := NewHttp(max)
-		h.maxConcurrency = maxConcurrency
-		semaphore := h.NewSemaphore()
-
-		successCh := make(chan responseMessage, max)
-		failCh := make(chan failedRequest, max)
-
-		// Launch goroutines for requests with concurrency control
-		for id := 1; id <= max; id++ {
-			wg.Add(1)
-			go func(id string) {
-				defer wg.Done()
-				semaphore <- struct{}{} // Acquire semaphore
-
-				result, err := h.Call(id)
-				if err != nil {
-					failCh <- failedRequest{ID: id, Error: err.Error()}
-					return
-				}
-
-				var response responseMessage
-				if err := json.Unmarshal(result, &response); err != nil {
-					failCh <- failedRequest{ID: id, Error: err.Error()}
-					return
-				}
-
-				successCh <- response
-				// makeRequest(id, successCh, failCh)
-				<-semaphore // Release semaphore
-			}(url + strconv.Itoa(id))
-		}
-
-		// Close channels once all goroutines are done
-		go func() {
-			wg.Wait()
-			close(successCh)
-			close(failCh)
-		}()
-
-		// Collect responses
-		var failCount uint
-		var result []responseMessage
-		var failures []failedRequest
-
-		for response := range successCh {
-			result = append(result, response)
-		}
-
-		for failure := range failCh {
-			failures = append(failures, failure)
-			failCount++
-		}
-
-		// Log completion and time taken
-		slog.Info("finish", slog.String("elapsed", time.Since(start).String()), slog.Int("success_count", len(result)), slog.Any("fail_count", failCount))
-
-		// sort result asc
-		sort.Slice(result, func(i, j int) bool {
-			a, _ := strconv.Atoi(result[i].ID)
-			b, _ := strconv.Atoi(result[j].ID)
-			return a > b
-
-		})
-		// Return the result as JSON
-		c.JSON(http.StatusOK, gin.H{
-			"success_count": len(result),
-			"fail_count":    failCount,
-			"responses":     result[:100],
-			"errors":        failures,
-			"elapsed":       time.Since(start).String(),
-		})
-	})
+	r.GET("/", Api)
 
 	r.Run(":8081")
 }
