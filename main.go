@@ -14,6 +14,8 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/sing3demons/todoapi/mlog"
+	"github.com/sing3demons/todoapi/router"
+	"github.com/sing3demons/todoapi/store"
 	"github.com/sing3demons/todoapi/todo"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -28,8 +30,26 @@ var log *slog.Logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOpti
 	ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 		if a.Key == "time" {
 			return slog.Attr{
-				Key: "@timestamp",
+				Key:   "@timestamp",
+				Value: a.Value,
 			}
+		}
+
+		if a.Key == "msg" {
+			return slog.Attr{
+				Key:   "event",
+				Value: a.Value,
+			}
+		}
+
+		if a.Key == "level" {
+			// return slog.Attr{
+			// 	Key:   a.Key,
+			// 	Value: slog.StringValue("DETAIL"),
+			// }
+
+			// remove level
+			return slog.Attr{}
 		}
 		return a
 	},
@@ -74,10 +94,10 @@ func main() {
 	r.GET("/ping", PingHandler)
 	r.GET("/transfer/:id", Transfer)
 
-	gormStore := todo.NewGormStore(db)
+	gormStore := store.NewGormStore(db)
 	todoHandler := todo.NewTodoHandler(gormStore)
-	r.POST("/todo", todoHandler.NewTask)
-	r.GET("/todo", todoHandler.List)
+	r.POST("/todo", router.NewGinHandler(todoHandler.NewTask))
+	r.GET("/todo", router.NewGinHandler(todoHandler.List))
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
