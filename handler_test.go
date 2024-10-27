@@ -34,7 +34,7 @@ func (*TestDB) Create(*todo.Todo) error { return nil }
 
 func (*TestDB) List() ([]todo.Todo, error) { return nil, nil }
 
-func (*TestDB) Delete(id int) error { return nil }
+func (*TestDB) Delete(id string) error { return nil }
 
 func TestPing(t *testing.T) {
 
@@ -42,7 +42,6 @@ func TestPing(t *testing.T) {
 	req.Header.Set("x-session", "test")
 	w := httptest.NewRecorder()
 	c := &TestContext{}
-	// c.Request = req
 
 	PingHandler(c)
 
@@ -56,4 +55,49 @@ func TestPing(t *testing.T) {
 		t.Errorf("want %d, got %d", http.StatusOK, w.Code)
 	}
 
+}
+
+func TestX(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/x", nil)
+	req.Header.Set("x-session", "test")
+	w := httptest.NewRecorder()
+	c := &TestContext{}
+
+	X(c)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("want %d, got %d", http.StatusOK, w.Code)
+	}
+}
+
+func TestHealth(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/health", nil)
+	req.Header.Set("x-session", "test")
+	w := httptest.NewRecorder()
+	c := &TestContext{}
+
+	Healthz(c)
+
+	want := "ok"
+
+	if c.v["status"] != want {
+		t.Errorf("want %s, got %s", want, c.v["status"])
+	}
+
+	if w.Code != http.StatusOK {
+		t.Errorf("want %d, got %d", http.StatusOK, w.Code)
+	}
+}
+
+func TestTransfer(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/transfer/1", nil)
+	req.Header.Set("x-session", "test")
+	w := httptest.NewRecorder()
+	c := &TestContext{}
+
+	Transfer(c)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("want %d, got %d", http.StatusOK, w.Code)
+	}
 }
