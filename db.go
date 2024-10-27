@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/sing3demons/todoapi/model"
 	"github.com/sing3demons/todoapi/store"
-	"github.com/sing3demons/todoapi/todo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -21,7 +21,7 @@ func connectDB() *gorm.DB {
 		panic("failed to connect database")
 	}
 
-	if err := db.AutoMigrate(&todo.Todo{}); err != nil {
+	if err := db.AutoMigrate(&model.Todo{}); err != nil {
 		log.Error("failed to migrate", slog.Any("error", err))
 	}
 
@@ -44,10 +44,6 @@ func connectMongo() *mongo.Client {
 type db struct {
 	client *mongo.Client
 }
-
-// func NewDB() *db {
-// 	return &db{}
-// }
 
 func (d *db) GormStore() *store.GormStore {
 	return store.NewGormStore(connectDB())
