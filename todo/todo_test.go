@@ -32,6 +32,21 @@ func (*TestDB) Create(*Todo) error { return nil }
 func (*TestDB) List() ([]Todo, error) { return nil, nil }
 
 func (*TestDB) Delete(id string) error { return nil }
+func (*TestDB) FindOne(id string) (*Todo, error) {
+	return &Todo{Title: "sleep"}, nil
+}
+
+// func TestCreateTodo(t *testing.T) {
+// 	handler := NewTodoHandler(&TestDB{})
+// 	c := &TestContext{}
+// 	handler.NewTask(c)
+
+// 	want := "new task"
+// 	if c.v["node"] != want {
+// 		t.Errorf("want %s got %s", want, c.v["node"])
+// 	}
+
+// }
 
 func TestCreateTodoNotAllowSleep(t *testing.T) {
 	handler := NewTodoHandler(&TestDB{})

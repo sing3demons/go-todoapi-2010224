@@ -1,23 +1,14 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"github.com/joho/godotenv"
 	"github.com/sing3demons/todoapi/router"
-	"github.com/sing3demons/todoapi/store"
 	"github.com/sing3demons/todoapi/todo"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 var (
@@ -42,12 +33,6 @@ var log *slog.Logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOpti
 		}
 
 		if a.Key == "level" {
-			// return slog.Attr{
-			// 	Key:   a.Key,
-			// 	Value: slog.StringValue("DETAIL"),
-			// }
-
-			// remove level
 			return slog.Attr{}
 		}
 		return a
@@ -58,40 +43,6 @@ func init() {
 	slog.SetDefault(log)
 }
 
-func connectDB() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(os.Getenv("DB_CONN")), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	if err := db.AutoMigrate(&todo.Todo{}); err != nil {
-		log.Error("failed to migrate", slog.Any("error", err))
-	}
-	return db
-}
-
-func connectMongo() *mongo.Collection {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	uri := os.Getenv("MONGO_URI")
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-	if err != nil {
-		log.Error("failed to connect mongodb", slog.Any("error", err))
-	}
-	collection := client.Database("myapp").Collection("todos")
-	collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{
-			Keys:    bson.D{bson.E{Key: "id", Value: 1}},
-			Options: options.Index().SetUnique(true),
-		},
-		{
-			Keys: bson.D{bson.E{Key: "created_at", Value: 1}},
-		},
-	})
-	// defer client.Disconnect(ctx)
-	return collection
-}
-
 func main() {
 	err := godotenv.Load("local.env")
 	if err != nil {
@@ -100,29 +51,35 @@ func main() {
 
 	slog.Info("Starting server...")
 
-	r := router.NewMyRouter(log)
+	r := router.NewFiberRouter(log)
 
-	r.GET("/healthz", func(c todo.IContext) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	r.GET("/healthz", Healthz)
 
-	r.GET("/x", func(c todo.IContext) {
-		c.JSON(200, gin.H{
-			"buildcommit": buildcommit,
-			"buildtime":   buildtime,
-		})
-	})
+	r.GET("/x", X)
 
 	r.GET("/ping", PingHandler)
 	r.GET("/transfer/:id", Transfer)
 
-	// store := store.NewGormStore(connectDB())
-	store := store.NewMongoStore(connectMongo())
-	todoHandler := todo.NewTodoHandler(store)
+	conn := db{}
+	defer conn.Close()
+
+	todoHandler := todo.NewTodoHandler(conn.MongoStore())
 	r.POST("/todo", todoHandler.NewTask)
+	r.GET("/todo/:id", todoHandler.FindOne)
 	r.GET("/todo", todoHandler.List)
 
 	r.Run()
+}
+
+func X(c todo.IContext) {
+	c.JSON(200, map[string]any{
+		"buildcommit": buildcommit,
+		"buildtime":   buildtime,
+	})
+}
+
+func Healthz(c todo.IContext) {
+	c.JSON(http.StatusOK, map[string]any{"status": "ok"})
 }
 
 func Transfer(c todo.IContext) {
@@ -146,7 +103,7 @@ func Transfer(c todo.IContext) {
 	logger.Info("responding...", slog.String("id", id))
 	time.Sleep(time.Millisecond * 100)
 
-	data := gin.H{"message": "success" + id,
+	data := map[string]any{"message": "success" + id,
 		"id": id,
 	}
 	logger.Info("finish", slog.Any("data", data))

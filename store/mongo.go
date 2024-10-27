@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/sing3demons/todoapi/todo"
@@ -47,7 +48,9 @@ func (g *MongoStore) List() ([]todo.Todo, error) {
 		return nil, err
 	}
 
-	fmt.Println("todos", todos)
+	for i := range todos {
+		todos[i].Href = fmt.Sprintf("%s/todo/%s", os.Getenv("HOST"), todos[i].ID)
+	}
 
 	return todos, nil
 }
@@ -60,4 +63,21 @@ func (g *MongoStore) Delete(id string) error {
 		{Key: "id", Value: id},
 	})
 	return err
+}
+
+func (g *MongoStore) FindOne(id string) (*todo.Todo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	var todo todo.Todo
+	filter := bson.D{
+		{Key: "deleted_at", Value: nil},
+		{Key: "id", Value: id},
+	}
+	err := g.Collection.FindOne(ctx, filter).Decode(&todo)
+	if err != nil {
+		return nil, err
+	}
+
+	todo.Href = fmt.Sprintf("%s/todo/%s", os.Getenv("HOST"), todo.ID)
+	return &todo, nil
 }

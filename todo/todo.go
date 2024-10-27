@@ -13,8 +13,9 @@ type NullTime struct {
 }
 
 type Todo struct {
-	Title     string     `json:"text" binding:"required"`
 	ID        string     `gorm:"primarykey" json:"id" bson:"id"`
+	Title     string     `json:"text" binding:"required"`
+	Href      string     `json:"href,omitempty"`
 	CreatedAt time.Time  `json:"created_at" bson:"created_at,omitempty"`
 	UpdatedAt time.Time  `json:"updated_at" bson:"updated_at,omitempty"`
 	DeletedAt *time.Time `gorm:"index" json:"-" bson:"deleted_at,omitempty"`
@@ -28,6 +29,7 @@ type storer interface {
 	Create(*Todo) error
 	List() ([]Todo, error)
 	Delete(string) error
+	FindOne(id string) (*Todo, error)
 }
 
 type TodoHandler struct {
@@ -125,4 +127,24 @@ func (t *TodoHandler) Remove(c IContext) {
 	logger.Info(cmd, slog.Any("data", data))
 
 	c.JSON(http.StatusOK, data)
+}
+
+func (t *TodoHandler) FindOne(c IContext) {
+	logger := c.Log()
+	idParam := c.Param("id")
+	cmd := "find task"
+
+	logger.Info(cmd, slog.Group("param", slog.String("id", idParam)))
+
+	todo, err := t.store.FindOne(idParam)
+	if err != nil {
+		logger.Error(cmd, slog.Any("error", err))
+		c.JSON(http.StatusInternalServerError, map[string]any{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	logger.Info(cmd, slog.Any("data", todo))
+	c.JSON(http.StatusOK, todo)
 }
