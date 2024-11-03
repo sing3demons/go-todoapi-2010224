@@ -1,12 +1,13 @@
 package store
 
 import (
+	"github.com/sing3demons/todoapi/logger"
 	"github.com/sing3demons/todoapi/model"
 )
 
 type Storer interface {
-	Create(*model.Todo) error
-	List(opt FindOption) ([]model.Todo, error)
+	Create(*model.Todo, logger.ILogDetail) error
+	List(opt FindOption, logger logger.ILogDetail) ([]model.Todo, error)
 	Delete(string) error
 	FindOne(id string) (*model.Todo, error)
 }

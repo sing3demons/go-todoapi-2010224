@@ -23,26 +23,28 @@ func (t *TodoHandler) NewTask(c router.IContext) {
 	cmd := "new task"
 	node := "client"
 	logger := c.Log("new_task")
+	logger.AddInput(node, cmd, c.Incoming())
+
 	var todo model.Todo
 	if err := c.Bind(&todo); err != nil {
+		logger.AddError(node, cmd, "output", map[string]any{
+			"error": "bad_request",
+		}, err)
 		c.JSON(http.StatusBadRequest, map[string]any{
 			"error": err.Error(),
 		})
 		return
 	}
-	logger.AddInput(node, cmd, todo)
 
 	if todo.Title == "sleep" {
-		logger.AddError(node, cmd, "output", map[string]any{
-			"error": "not_allowed",
-		}, fmt.Errorf("not allowed"))
+		logger.AddError(node, cmd, "output", todo, fmt.Errorf("not allowed"))
 		c.JSON(http.StatusBadRequest, map[string]any{
 			"error": "not allowed",
 		})
 		return
 	}
 
-	err := t.store.Create(&todo)
+	err := t.store.Create(&todo, logger)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, map[string]any{
 			"error": err.Error(),
@@ -50,7 +52,7 @@ func (t *TodoHandler) NewTask(c router.IContext) {
 		return
 	}
 
-	logger.AddOutput(node, cmd, todo).End()
+	logger.AddOutput(node, cmd, todo)
 	logger.End()
 
 	c.JSON(http.StatusCreated, map[string]any{
@@ -61,7 +63,7 @@ func (t *TodoHandler) NewTask(c router.IContext) {
 func (t *TodoHandler) List(c router.IContext) {
 	cmd := "list task"
 	logger := c.Log("tasks_list")
-	logger.AddInput("client", cmd, nil)
+	logger.AddInput("client", cmd, c.Incoming())
 
 	opt := store.FindOption{}
 
@@ -72,11 +74,23 @@ func (t *TodoHandler) List(c router.IContext) {
 		}
 	}
 
+	order := c.Query("order")
+	sort := c.Query("sort")
+	if sort != "" {
+		opt.SortItem = map[string]any{
+			sort: "asc",
+		}
+		if order == "desc" {
+			opt.SortItem[sort] = "desc"
+		}
+	}
+
 	fields := c.Query("fields")
 	if fields != "" {
 		opt.SelectItem = strings.Split(fields, ",")
 	}
-	todos, err := t.store.List(opt)
+
+	todos, err := t.store.List(opt, logger)
 	if err != nil {
 		logger.Error(cmd, slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, map[string]any{

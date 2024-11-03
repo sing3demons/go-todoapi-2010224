@@ -26,6 +26,9 @@ func (t *TestContext) Get(string) interface{}       { return nil }
 func (t *TestContext) TransactionID() string        { return "" }
 func (t *TestContext) Param(string) string          { return "" }
 func (t *TestContext) Query(string) string          { return "" }
+func (t *TestContext) Incoming() map[string]interface{} {
+	return map[string]interface{}{}
+}
 
 type TestDB struct{}
 

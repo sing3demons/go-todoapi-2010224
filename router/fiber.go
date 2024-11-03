@@ -61,14 +61,44 @@ func (c *FiberContext) Query(key string) string {
 	return c.Ctx.Query(key)
 }
 
+func (c *FiberContext) Incoming() map[string]any {
+	var data = make(map[string]any)
+	body := make(map[string]any)
+	c.Ctx.BodyParser(&body)
+	params := c.Ctx.AllParams()
+	query := c.Ctx.Queries()
+
+	if len(query) != 0 {
+		data["query"] = query
+	}
+
+	if len(params) != 0 {
+		data["params"] = params
+	}
+
+	if len(body) != 0 {
+		data["body"] = body
+	}
+
+	return data
+}
+
 func (c *FiberContext) Log(name string) logger.ILogDetail {
 	route := c.Ctx.Route().Path
 	method := c.Ctx.Method()
 	device := c.Ctx.Get("User-Agent")
+
+	var instance string
+	instance, err := os.Hostname()
+	if err != nil {
+		instance = c.Ctx.Hostname()
+	}
+
 	attribute := map[string]any{
-		"route":  route,
-		"method": method,
-		"device": device,
+		"route":    route,
+		"method":   method,
+		"device":   device,
+		"instance": instance,
 	}
 
 	switch l := c.Ctx.Locals("logger").(type) {

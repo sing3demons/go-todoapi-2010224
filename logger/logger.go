@@ -28,9 +28,12 @@ type ILogDetail interface {
 }
 
 type LogEvent struct {
-	Name       string            `json:"name"`
+	Name string `json:"name"`
+	// Action     string            `json:"action"`
 	Timestamp  string            `json:"timestamp"`
 	Attributes interface{}       `json:"attributes,omitempty"`
+	Input      interface{}       `json:"input,omitempty"`
+	Output     interface{}       `json:"output,omitempty"`
 	Msg        map[string]string `json:"msg,omitempty"`
 }
 
@@ -41,9 +44,14 @@ func New(s *slog.Logger, name string, attribute map[string]any) ILogDetail {
 func (l *Logger) addEvent(node, cmd, name string, data interface{}) {
 	l.event = fmt.Sprintf("%s.%s", node, cmd)
 	attribute := LogEvent{
-		Name:       l.name(node, cmd, name),
+		Name:       l.name(node, cmd),
 		Timestamp:  time.Now().Format(time.RFC3339),
-		Attributes: data,
+	}
+
+	if name == "input" {
+		attribute.Input = data
+	} else {
+		attribute.Output = data
 	}
 
 	l.attributes = append(l.attributes, attribute)
@@ -65,8 +73,8 @@ func (l *Logger) Warn(msg string, fields ...any) {
 	l.Logger.Warn(msg, fields...)
 }
 
-func (l *Logger) name(node, cmd, name string) string {
-	return strings.ReplaceAll(fmt.Sprintf("(%s)%s.%s", name, node, cmd), " ", "_")
+func (l *Logger) name(node, cmd string) string {
+	return strings.ReplaceAll(fmt.Sprintf("%s.%s", node, cmd), " ", "_")
 }
 
 func (l *Logger) AddInput(node, cmd string, data interface{}) {
@@ -82,13 +90,19 @@ func (l *Logger) AddError(node, cmd, inOut string, data interface{}, err error) 
 	l.event = fmt.Sprintf("%s.%s", node, cmd)
 
 	attribute := LogEvent{
-		Name:       l.name(node, cmd, inOut),
+		Name:       l.name(node, cmd),
 		Timestamp:  time.Now().Format(time.RFC3339),
-		Attributes: data,
 		Msg:        map[string]string{"error": err.Error()},
 	}
 
+	if inOut == "input" {
+		attribute.Input = data
+	} else {
+		attribute.Output = data
+	}
+
 	l.attributes = append(l.attributes, attribute)
+
 	l.End()
 }
 
@@ -103,4 +117,5 @@ func (l *Logger) End() {
 			slog.Any("events", l.attributes))
 	}
 	l.attributes = nil
+	l.attribute = nil
 }

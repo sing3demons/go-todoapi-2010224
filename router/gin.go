@@ -36,10 +36,17 @@ func (c *MyContext) Log(name string) logger.ILogDetail {
 	route := c.FullPath()
 	method := c.Request.Method
 	device := c.Context.Request.UserAgent()
+
+	var instance string
+	instance, err := os.Hostname()
+	if err != nil {
+		instance = c.Context.Request.Host
+	}
 	attribute := map[string]any{
-		"route":  route,
-		"method": method,
-		"device": device,
+		"route":    route,
+		"method":   method,
+		"device":   device,
+		"instants": instance,
 	}
 	switch l := c.Value("logger").(type) {
 	case *slog.Logger:
@@ -47,6 +54,28 @@ func (c *MyContext) Log(name string) logger.ILogDetail {
 	default:
 		return logger.New(slog.Default(), name, attribute)
 	}
+}
+
+func (c *MyContext) Incoming() map[string]any {
+	var data = make(map[string]any)
+	body := make(map[string]any)
+	c.Context.BindJSON(&body)
+	params := c.Context.Keys
+	query := c.Context.Request.URL.Query()
+
+	if len(query) != 0 {
+		data["query"] = query
+	}
+
+	if len(params) != 0 {
+		data["params"] = params
+	}
+
+	if len(body) != 0 {
+		data["body"] = body
+	}
+
+	return data
 }
 
 func (c *MyContext) Get(key string) any {

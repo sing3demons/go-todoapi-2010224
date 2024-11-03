@@ -27,12 +27,15 @@ func (t *TestContext) Get(string) interface{} { return nil }
 func (t *TestContext) TransactionID() string  { return "" }
 func (t *TestContext) Param(string) string    { return "" }
 func (t *TestContext) Query(string) string    { return "" }
+func (t *TestContext) Incoming() map[string]interface{} {
+	return map[string]interface{}{}
+}
 
 type TestDB struct{}
 
-func (*TestDB) Create(*model.Todo) error { return nil }
+func (*TestDB) Create(*model.Todo, logger.ILogDetail) error { return nil }
 
-func (*TestDB) List(store.FindOption) ([]model.Todo, error) { return nil, nil }
+func (*TestDB) List(store.FindOption, logger.ILogDetail) ([]model.Todo, error) { return nil, nil }
 
 func (*TestDB) Delete(id string) error { return nil }
 func (*TestDB) FindOne(id string) (*model.Todo, error) {

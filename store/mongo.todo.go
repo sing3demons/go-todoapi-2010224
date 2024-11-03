@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/sing3demons/todoapi/logger"
 	"github.com/sing3demons/todoapi/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,14 +22,18 @@ func NewMongoStore(db *mongo.Collection) *MongoStore {
 	return &MongoStore{db}
 }
 
-func (g *MongoStore) Create(todo *model.Todo) error {
+func (g *MongoStore) Create(todo *model.Todo, logger logger.ILogDetail) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
+	logger.AddOutput("mongo", "create_todo", map[string]interface{}{
+		"body": *todo,
+	})
 	todo.ID = primitive.NewObjectID().Hex()
 	todo.CreatedAt = time.Now()
 	todo.UpdatedAt = time.Now()
 	todo.DeletedAt = nil
 	_, err := g.Collection.InsertOne(ctx, todo)
+	logger.AddInput("mongo", "create_todo", todo)
 
 	return err
 }
@@ -38,7 +43,7 @@ var projection = bson.D{
 	{Key: "title", Value: 1},
 }
 
-func (g *MongoStore) List(opt FindOption) ([]model.Todo, error) {
+func (g *MongoStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Todo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	var todos []model.Todo
@@ -53,6 +58,7 @@ func (g *MongoStore) List(opt FindOption) ([]model.Todo, error) {
 	}
 
 	opts := &options.FindOptions{}
+	opts.Sort = bson.D{{Key: "created_at", Value: -1}}
 
 	if opt.SelectItem != nil {
 		projection = bson.D{}
@@ -67,8 +73,21 @@ func (g *MongoStore) List(opt FindOption) ([]model.Todo, error) {
 		opts.Sort = opt.SortItem
 	}
 
+	if opt.SortItem != nil {
+		for k, v := range opt.SortItem {
+			if v == "asc" {
+				opts.Sort = bson.D{{Key: k, Value: 1}}
+			} else {
+				opts.Sort = bson.D{{Key: k, Value: -1}}
+			}
+		}
+	}
+
+	logger.AddOutput("mongo", "list_todo", opt).End()
+
 	cur, err := g.Collection.Find(ctx, filter, opts)
 	if err != nil {
+		logger.AddError("mongo", "list_todo", "output", nil, err)
 		return nil, err
 	}
 
@@ -78,9 +97,11 @@ func (g *MongoStore) List(opt FindOption) ([]model.Todo, error) {
 
 	for i := range todos {
 		if todos[i].ID != "" {
-			todos[i].Href = g.getHref(todos[i].ID)
+			todos[i].Href = GenHref(todos[i].ID)
 		}
 	}
+
+	logger.AddInput("mongo", "list_todo", todos)
 
 	return todos, nil
 }
@@ -114,10 +135,13 @@ func (g *MongoStore) FindOne(id string) (*model.Todo, error) {
 		return nil, err
 	}
 
-	todo.Href = g.getHref(todo.ID)
+	todo.Href = GenHref(todo.ID)
 	return &todo, nil
 }
 
-func (g *MongoStore) getHref(id string) string {
+func GenHref(id string) string {
+	if os.Getenv("HOST") == "" {
+		return fmt.Sprintf("%s/todo/%s", "{{HOST}}", id)
+	}
 	return fmt.Sprintf("%s/todo/%s", os.Getenv("HOST"), id)
 }

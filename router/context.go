@@ -10,4 +10,5 @@ type IContext interface {
 	TransactionID() string
 	Param(string) string
 	Query(string) string
+	Incoming() map[string]any
 }
