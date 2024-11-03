@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"log/slog"
 	"os"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/sing3demons/todoapi/router"
 	"github.com/sing3demons/todoapi/todo"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -15,7 +17,16 @@ var (
 	buildtime   = time.Now().String()
 )
 
-var log *slog.Logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+var f = &lumberjack.Logger{
+	LocalTime:  true,
+	Compress:   true,
+	Filename:   "log/details/todoapi.log",
+	MaxSize:    10, // megabytes
+	MaxBackups: 5,
+	MaxAge:     30, // days
+}
+
+var log *slog.Logger = slog.New(slog.NewJSONHandler(io.MultiWriter(os.Stdout, f), &slog.HandlerOptions{
 	ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 		if a.Key == "time" {
 			return slog.Attr{
@@ -31,15 +42,13 @@ var log *slog.Logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOpti
 			}
 		}
 
-		if a.Key == "level" {
-			return slog.Attr{}
-		}
 		return a
 	},
 }))
 
 func init() {
 	slog.SetDefault(log)
+
 }
 
 func main() {
