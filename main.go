@@ -17,34 +17,41 @@ var (
 	buildtime   = time.Now().String()
 )
 
-var f = &lumberjack.Logger{
-	LocalTime:  true,
-	Compress:   true,
-	Filename:   "log/details/todoapi.log",
-	MaxSize:    10, // megabytes
-	MaxBackups: 5,
-	MaxAge:     30, // days
+func NewLogger() *slog.Logger {
+	serviceName := "todoapi"
+	time := time.Now().Format("2006-01-02")
+
+	fileName := "log/details/" + serviceName + "_" + time + ".log"
+	f := &lumberjack.Logger{
+		LocalTime:  true,
+		Compress:   true,
+		Filename:   fileName,
+		MaxSize:    10, // megabytes
+		MaxBackups: 5,
+		MaxAge:     1, // days
+	}
+	return slog.New(slog.NewJSONHandler(io.MultiWriter(os.Stdout, f), &slog.HandlerOptions{
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == "time" {
+				return slog.Attr{
+					Key:   "@timestamp",
+					Value: a.Value,
+				}
+			}
+
+			if a.Key == "msg" {
+				return slog.Attr{
+					Key:   "event",
+					Value: a.Value,
+				}
+			}
+
+			return a
+		},
+	}))
 }
 
-var log *slog.Logger = slog.New(slog.NewJSONHandler(io.MultiWriter(os.Stdout, f), &slog.HandlerOptions{
-	ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-		if a.Key == "time" {
-			return slog.Attr{
-				Key:   "@timestamp",
-				Value: a.Value,
-			}
-		}
-
-		if a.Key == "msg" {
-			return slog.Attr{
-				Key:   "event",
-				Value: a.Value,
-			}
-		}
-
-		return a
-	},
-}))
+var log *slog.Logger = NewLogger()
 
 func init() {
 	slog.SetDefault(log)

@@ -36,8 +36,7 @@ func Transfer(c router.IContext) {
 	node := "client"
 	cmd := "transfer"
 
-	param := map[string]any{"id": id}
-	logger.AddInput(node, cmd, param)
+	logger.AddInput(node, cmd, c.Incoming())
 
 	logger.Info("parsing...", slog.String("id", id))
 	time.Sleep(time.Millisecond * 200)
@@ -59,7 +58,6 @@ func Transfer(c router.IContext) {
 	data := map[string]any{"message": "success" + id,
 		"id": id,
 	}
-	logger.AddOutput(node, cmd, data)
-	logger.End()
+	logger.AddOutput(node, cmd, data).End()
 	c.JSON(http.StatusOK, data)
 }
