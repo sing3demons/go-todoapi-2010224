@@ -57,6 +57,10 @@ func (c *FiberContext) JSON(code int, v any) {
 	c.Ctx.JSON(v)
 }
 
+func (c *FiberContext) Query(key string) string {
+	return c.Ctx.Query(key)
+}
+
 func (c *FiberContext) Log(name string) *logger.Logger {
 	route := c.Ctx.Route().Path
 	method := c.Ctx.Method()

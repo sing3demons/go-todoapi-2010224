@@ -9,4 +9,5 @@ type IContext interface {
 	Get(string) interface{}
 	TransactionID() string
 	Param(string) string
+	Query(string) string
 }

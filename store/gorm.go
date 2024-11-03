@@ -24,9 +24,22 @@ func (g *GormStore) Create(todo *model.Todo) error {
 
 var selectTodo = []string{"id", "title"}
 
-func (g *GormStore) List() ([]model.Todo, error) {
+func (g *GormStore) List(opt FindOption) ([]model.Todo, error) {
 	var todos []model.Todo
-	r := g.db.Select(selectTodo).Find(&todos)
+	var conds []interface{}
+	if opt.SearchItem != nil {
+		for k, v := range opt.SearchItem {
+			conds = append(conds, fmt.Sprintf("%s = ?", k), v)
+		}
+	}
+
+	if opt.SortItem != nil {
+		conds = append(conds, "order by")
+		for k, v := range opt.SortItem {
+			conds = append(conds, fmt.Sprintf("%s %s", k, v))
+		}
+	}
+	r := g.db.Select(selectTodo).Find(&todos, conds...)
 	if err := r.Error; err != nil {
 		return nil, err
 	}

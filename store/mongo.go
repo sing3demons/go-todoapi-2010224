@@ -38,16 +38,28 @@ var projection = bson.D{
 	{Key: "title", Value: 1},
 }
 
-func (g *MongoStore) List() ([]model.Todo, error) {
+func (g *MongoStore) List(opt FindOption) ([]model.Todo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	var todos []model.Todo
 	filter := bson.D{
 		{Key: "deleted_at", Value: nil},
 	}
+
+	if opt.SearchItem != nil {
+		for k, v := range opt.SearchItem {
+			filter = append(filter, bson.E{Key: k, Value: v})
+		}
+	}
+
 	opts := &options.FindOptions{
 		Projection: projection,
 	}
+
+	if opt.SortItem != nil {
+		opts.Sort = opt.SortItem
+	}
+
 	cur, err := g.Collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err

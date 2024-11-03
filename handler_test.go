@@ -25,6 +25,7 @@ func (t *TestContext) Log(string) *logger.Logger    { return logger.New(slog.Def
 func (t *TestContext) Get(string) interface{}       { return nil }
 func (t *TestContext) TransactionID() string        { return "" }
 func (t *TestContext) Param(string) string          { return "" }
+func (t *TestContext) Query(string) string          { return "" }
 
 type TestDB struct{}
 
@@ -33,7 +34,7 @@ func (*TestDB) List() ([]model.Todo, error) { return nil, nil }
 func (*TestDB) Delete(id string) error      { return nil }
 
 func TestPing(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/ping", nil)
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	req.Header.Set(sessionHeader, "test-ping")
 	w := httptest.NewRecorder()
 	c := &TestContext{}
@@ -53,7 +54,7 @@ func TestPing(t *testing.T) {
 }
 
 func TestX(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/x", nil)
+	req := httptest.NewRequest(http.MethodGet, "/x", nil)
 	req.Header.Set(sessionHeader, "test-x")
 	w := httptest.NewRecorder()
 	c := &TestContext{}
@@ -66,7 +67,7 @@ func TestX(t *testing.T) {
 }
 
 func TestHealth(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/health", nil)
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	req.Header.Set(sessionHeader, "test-health")
 	w := httptest.NewRecorder()
 	c := &TestContext{}
@@ -85,7 +86,7 @@ func TestHealth(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/transfer/1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/transfer/1", nil)
 	req.Header.Set(sessionHeader, "test-")
 	w := httptest.NewRecorder()
 	c := &TestContext{}

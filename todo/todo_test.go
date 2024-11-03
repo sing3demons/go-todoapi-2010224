@@ -6,6 +6,7 @@ import (
 
 	"github.com/sing3demons/todoapi/logger"
 	"github.com/sing3demons/todoapi/model"
+	"github.com/sing3demons/todoapi/store"
 )
 
 type TestContext struct {
@@ -25,12 +26,13 @@ func (t *TestContext) Log(string) *logger.Logger {
 func (t *TestContext) Get(string) interface{} { return nil }
 func (t *TestContext) TransactionID() string  { return "" }
 func (t *TestContext) Param(string) string    { return "" }
+func (t *TestContext) Query(string) string    { return "" }
 
 type TestDB struct{}
 
 func (*TestDB) Create(*model.Todo) error { return nil }
 
-func (*TestDB) List() ([]model.Todo, error) { return nil, nil }
+func (*TestDB) List(store.FindOption) ([]model.Todo, error) { return nil, nil }
 
 func (*TestDB) Delete(id string) error { return nil }
 func (*TestDB) FindOne(id string) (*model.Todo, error) {

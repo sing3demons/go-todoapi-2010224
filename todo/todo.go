@@ -61,7 +61,16 @@ func (t *TodoHandler) List(c router.IContext) {
 	cmd := "list task"
 	logger := c.Log("tasks_list")
 	logger.AddInput("client", cmd, nil)
-	todos, err := t.store.List()
+
+	opt := store.FindOption{}
+
+	search := c.Query("s")
+	if search != "" {
+		opt.SearchItem = map[string]interface{}{
+			"title": search,
+		}
+	}
+	todos, err := t.store.List(opt)
 	if err != nil {
 		logger.Error(cmd, slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, map[string]any{

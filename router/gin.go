@@ -62,6 +62,10 @@ func (c *MyContext) Param(key string) string {
 	return c.Context.Param(key)
 }
 
+func (c *MyContext) Query(key string) string {
+	return c.Context.Query(key)
+}
+
 func NewGinHandler(handler func(IContext)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		handler(NewMyContext(c))
