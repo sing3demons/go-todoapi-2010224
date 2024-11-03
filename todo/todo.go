@@ -92,7 +92,6 @@ func (t *TodoHandler) List(c router.IContext) {
 
 	todos, err := t.store.List(opt, logger)
 	if err != nil {
-		logger.Error(cmd, slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, map[string]any{
 			"error": err.Error(),
 		})
@@ -110,7 +109,7 @@ func (t *TodoHandler) Remove(c router.IContext) {
 
 	logger.Info(cmd, slog.Group("param", slog.String("id", idParam)))
 
-	err := t.store.Delete(idParam)
+	err := t.store.Delete(idParam, logger)
 	if err != nil {
 		logger.Error(cmd, slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, map[string]any{
@@ -134,17 +133,42 @@ func (t *TodoHandler) FindOne(c router.IContext) {
 	idParam := c.Param("id")
 	cmd := "find task"
 
-	logger.Info(cmd, slog.Group("param", slog.String("id", idParam)))
+	logger.AddInput("client", cmd, c.Incoming())
 
-	todo, err := t.store.FindOne(idParam)
+	todo, err := t.store.FindOne(idParam, logger)
 	if err != nil {
-		logger.Error(cmd, slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, map[string]any{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	logger.Info(cmd, slog.Any("data", todo))
+	logger.AddOutput("client", cmd, todo).End()
 	c.JSON(http.StatusOK, todo)
+}
+
+func (t *TodoHandler) Delete(c router.IContext) {
+	logger := c.Log("delete_task")
+	idParam := c.Param("id")
+	cmd := "delete task"
+
+	logger.AddInput("client", cmd, c.Incoming())
+
+	err := t.store.Delete(idParam, logger)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError,
+			map[string]any{
+				"error": err.Error(),
+			})
+		return
+	}
+
+	data := map[string]any{
+		"ID":     idParam,
+		"status": "success",
+	}
+
+	logger.AddOutput("client", cmd, data).End()
+
+	c.JSON(http.StatusOK, data)
 }

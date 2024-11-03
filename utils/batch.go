@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"bufio"
@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-func main() {
-	dirPath := "../../logs/details"
+func NewBatchRemove() {
+	dirPath := "./logs/details"
 
 	// Read the directory entries
 	entries, err := os.ReadDir(dirPath)

@@ -78,6 +78,7 @@ func main() {
 	r.POST("/todo", todoHandler.NewTask)
 	r.GET("/todo/:id", todoHandler.FindOne)
 	r.GET("/todo", todoHandler.List)
+	r.DELETE("/todo/:id", todoHandler.Delete)
 
 	r.Run()
 }

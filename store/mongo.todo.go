@@ -2,12 +2,11 @@ package store
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"time"
 
 	"github.com/sing3demons/todoapi/logger"
 	"github.com/sing3demons/todoapi/model"
+	"github.com/sing3demons/todoapi/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -97,7 +96,7 @@ func (g *MongoStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Tod
 
 	for i := range todos {
 		if todos[i].ID != "" {
-			todos[i].Href = GenHref(todos[i].ID)
+			todos[i].Href = utils.GenHref(todos[i].ID)
 		}
 	}
 
@@ -106,7 +105,8 @@ func (g *MongoStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Tod
 	return todos, nil
 }
 
-func (g *MongoStore) Delete(id string) error {
+func (g *MongoStore) Delete(id string, logger logger.ILogDetail) error {
+
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -115,11 +115,19 @@ func (g *MongoStore) Delete(id string) error {
 		{Key: "id", Value: id},
 	}
 
-	_, err := g.Collection.DeleteOne(ctx, filter)
-	return err
+	logger.AddOutput("mongo", "delete_todo", filter).End()
+
+	r, err := g.Collection.DeleteOne(ctx, filter)
+	if err != nil {
+		logger.AddError("mongo", "delete_todo", "input", nil, err)
+		return err
+	}
+
+	logger.AddInput("mongo", "delete_todo", r)
+	return nil
 }
 
-func (g *MongoStore) FindOne(id string) (*model.Todo, error) {
+func (g *MongoStore) FindOne(id string, logger logger.ILogDetail) (*model.Todo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	var todo model.Todo
@@ -135,13 +143,6 @@ func (g *MongoStore) FindOne(id string) (*model.Todo, error) {
 		return nil, err
 	}
 
-	todo.Href = GenHref(todo.ID)
+	todo.Href = utils.GenHref(todo.ID)
 	return &todo, nil
-}
-
-func GenHref(id string) string {
-	if os.Getenv("HOST") == "" {
-		return fmt.Sprintf("%s/todo/%s", "{{HOST}}", id)
-	}
-	return fmt.Sprintf("%s/todo/%s", os.Getenv("HOST"), id)
 }

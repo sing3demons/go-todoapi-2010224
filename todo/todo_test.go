@@ -35,10 +35,11 @@ type TestDB struct{}
 
 func (*TestDB) Create(*model.Todo, logger.ILogDetail) error { return nil }
 
-func (*TestDB) List(store.FindOption, logger.ILogDetail) ([]model.Todo, error) { return nil, nil }
-
-func (*TestDB) Delete(id string) error { return nil }
-func (*TestDB) FindOne(id string) (*model.Todo, error) {
+func (*TestDB) List(store.FindOption, logger.ILogDetail) ([]model.Todo, error) {
+	return nil, nil
+}
+func (*TestDB) Delete(string, logger.ILogDetail) error { return nil }
+func (*TestDB) FindOne(string, logger.ILogDetail) (*model.Todo, error) {
 	return &model.Todo{Title: "sleep"}, nil
 }
 

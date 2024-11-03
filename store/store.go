@@ -8,8 +8,8 @@ import (
 type Storer interface {
 	Create(*model.Todo, logger.ILogDetail) error
 	List(opt FindOption, logger logger.ILogDetail) ([]model.Todo, error)
-	Delete(string) error
-	FindOne(id string) (*model.Todo, error)
+	Delete(id string, logger logger.ILogDetail) error
+	FindOne(id string, logger logger.ILogDetail) (*model.Todo, error)
 }
 
 type FindOption struct {

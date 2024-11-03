@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sing3demons/todoapi/logger"
 	"github.com/sing3demons/todoapi/model"
+	"github.com/sing3demons/todoapi/utils"
 	"gorm.io/gorm"
 )
 
@@ -63,7 +64,7 @@ func (g *GormStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Todo
 
 	for i := range todos {
 		if todos[i].ID != "" {
-			todos[i].Href = GenHref(todos[i].ID)
+			todos[i].Href = utils.GenHref(todos[i].ID)
 		}
 	}
 
@@ -71,16 +72,31 @@ func (g *GormStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Todo
 	return todos, nil
 }
 
-func (g *GormStore) Delete(id string) error {
-	return g.db.Delete(&model.Todo{}, id).Error
+func (g *GormStore) Delete(id string, logger logger.ILogDetail) error {
+	node := "gorm"
+	cmd := "delete_todo"
+	logger.AddOutput(node, cmd, id).End()
+	r := g.db.Delete(&model.Todo{}, id)
+
+	if r.Error != nil {
+		logger.AddError(node, cmd, "output", nil, r.Error)
+		return r.Error
+	}
+	logger.AddOutput(node, cmd, r).End()
+	return nil
 }
 
-func (g *GormStore) FindOne(id string) (*model.Todo, error) {
+func (g *GormStore) FindOne(id string, logger logger.ILogDetail) (*model.Todo, error) {
+	node := "gorm"
+	cmd := "find_one_todo"
+	logger.AddOutput(node, cmd, id).End()
 	var todo model.Todo
 	r := g.db.First(&todo, "id = ?", id)
 	if err := r.Error; err != nil {
+		logger.AddError(node, cmd, "output", nil, err)
 		return nil, err
 	}
-	todo.Href = GenHref(todo.ID)
+	todo.Href = utils.GenHref(todo.ID)
+	logger.AddInput(node, cmd, todo)
 	return &todo, nil
 }
