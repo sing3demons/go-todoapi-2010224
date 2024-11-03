@@ -21,7 +21,7 @@ func NewLogger() *slog.Logger {
 	serviceName := "todoapi"
 	time := time.Now().Format("2006-01-02")
 
-	fileName := "log/details/" + serviceName + "_" + time + ".log"
+	fileName := "logs/details/" + serviceName + "_" + time + ".log"
 	f := &lumberjack.Logger{
 		LocalTime:  true,
 		Compress:   true,
@@ -64,7 +64,7 @@ func main() {
 		log.Error("Error loading .env file")
 	}
 
-	slog.Info("Starting server...")
+	slog.Debug("Starting server...")
 
 	r := router.NewFiberRouter(log)
 	r.GET("/healthz", Healthz)
