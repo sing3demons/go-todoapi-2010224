@@ -22,8 +22,6 @@ func (g *GormStore) Create(todo *model.Todo) error {
 	return g.db.Create(todo).Error
 }
 
-var selectTodo = []string{"id", "title"}
-
 func (g *GormStore) List(opt FindOption) ([]model.Todo, error) {
 	var todos []model.Todo
 	var conds []interface{}
@@ -39,13 +37,20 @@ func (g *GormStore) List(opt FindOption) ([]model.Todo, error) {
 			conds = append(conds, fmt.Sprintf("%s %s", k, v))
 		}
 	}
+
+	selectTodo := []string{}
+	if opt.SelectItem != nil {
+		selectTodo = opt.SelectItem
+	}
 	r := g.db.Select(selectTodo).Find(&todos, conds...)
 	if err := r.Error; err != nil {
 		return nil, err
 	}
 
 	for i := range todos {
-		todos[i].Href = g.getHref(todos[i].ID)
+		if todos[i].ID != "" {
+			todos[i].Href = g.getHref(todos[i].ID)
+		}
 	}
 	return todos, nil
 }
@@ -60,7 +65,7 @@ func (g *GormStore) getHref(id string) string {
 
 func (g *GormStore) FindOne(id string) (*model.Todo, error) {
 	var todo model.Todo
-	r := g.db.Select(selectTodo).First(&todo, "id = ?", id)
+	r := g.db.First(&todo, "id = ?", id)
 	if err := r.Error; err != nil {
 		return nil, err
 	}

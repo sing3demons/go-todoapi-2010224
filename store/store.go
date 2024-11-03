@@ -15,4 +15,5 @@ type FindOption struct {
 	SearchItem  map[string]interface{}
 	CommandName string
 	SortItem    map[string]interface{}
+	SelectItem  []string
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/sing3demons/todoapi/model"
 	"github.com/sing3demons/todoapi/router"
@@ -33,7 +34,7 @@ func (t *TodoHandler) NewTask(c router.IContext) {
 
 	if todo.Title == "sleep" {
 		logger.AddError(node, cmd, "output", map[string]any{
-			"error": "not allowed",
+			"error": "not_allowed",
 		}, fmt.Errorf("not allowed"))
 		c.JSON(http.StatusBadRequest, map[string]any{
 			"error": "not allowed",
@@ -49,7 +50,7 @@ func (t *TodoHandler) NewTask(c router.IContext) {
 		return
 	}
 
-	logger.AddOutput(node, cmd, todo)
+	logger.AddOutput(node, cmd, todo).End()
 	logger.End()
 
 	c.JSON(http.StatusCreated, map[string]any{
@@ -70,6 +71,11 @@ func (t *TodoHandler) List(c router.IContext) {
 			"title": search,
 		}
 	}
+
+	fields := c.Query("fields")
+	if fields != "" {
+		opt.SelectItem = strings.Split(fields, ",")
+	}
 	todos, err := t.store.List(opt)
 	if err != nil {
 		logger.Error(cmd, slog.Any("error", err))
@@ -79,8 +85,7 @@ func (t *TodoHandler) List(c router.IContext) {
 		return
 	}
 
-	logger.AddOutput("client", cmd, todos)
-	logger.End()
+	logger.AddOutput("client", cmd, todos).End()
 	c.JSON(http.StatusOK, todos)
 }
 

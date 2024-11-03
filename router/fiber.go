@@ -61,7 +61,7 @@ func (c *FiberContext) Query(key string) string {
 	return c.Ctx.Query(key)
 }
 
-func (c *FiberContext) Log(name string) *logger.Logger {
+func (c *FiberContext) Log(name string) logger.ILogDetail {
 	route := c.Ctx.Route().Path
 	method := c.Ctx.Method()
 	device := c.Ctx.Get("User-Agent")

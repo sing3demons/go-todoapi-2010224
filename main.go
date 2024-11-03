@@ -58,7 +58,7 @@ func main() {
 
 	conn := db{}
 	defer conn.Close()
-	todoHandler := todo.NewTodoHandler(conn.GormStore())
+	todoHandler := todo.NewTodoHandler(conn.MongoStore())
 	r.POST("/todo", todoHandler.NewTask)
 	r.GET("/todo/:id", todoHandler.FindOne)
 	r.GET("/todo", todoHandler.List)

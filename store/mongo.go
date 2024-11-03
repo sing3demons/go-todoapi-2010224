@@ -52,8 +52,15 @@ func (g *MongoStore) List(opt FindOption) ([]model.Todo, error) {
 		}
 	}
 
-	opts := &options.FindOptions{
-		Projection: projection,
+	opts := &options.FindOptions{}
+
+	if opt.SelectItem != nil {
+		projection = bson.D{}
+		for _, v := range opt.SelectItem {
+			projection = append(projection, bson.E{Key: v, Value: 1})
+		}
+
+		opts.Projection = projection
 	}
 
 	if opt.SortItem != nil {
@@ -70,7 +77,9 @@ func (g *MongoStore) List(opt FindOption) ([]model.Todo, error) {
 	}
 
 	for i := range todos {
-		todos[i].Href = g.getHref(todos[i].ID)
+		if todos[i].ID != "" {
+			todos[i].Href = g.getHref(todos[i].ID)
+		}
 	}
 
 	return todos, nil
@@ -79,10 +88,13 @@ func (g *MongoStore) List(opt FindOption) ([]model.Todo, error) {
 func (g *MongoStore) Delete(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_, err := g.Collection.DeleteOne(ctx, bson.D{
+
+	filter := bson.D{
 		{Key: "deleted_at", Value: nil},
 		{Key: "id", Value: id},
-	})
+	}
+
+	_, err := g.Collection.DeleteOne(ctx, filter)
 	return err
 }
 

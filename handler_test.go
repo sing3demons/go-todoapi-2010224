@@ -21,7 +21,7 @@ func (t *TestContext) Bind(v interface{}) error {
 	return nil
 }
 func (t *TestContext) JSON(code int, v interface{}) { t.v = v.(map[string]interface{}) }
-func (t *TestContext) Log(string) *logger.Logger    { return logger.New(slog.Default(), "", nil) }
+func (t *TestContext) Log(string) logger.ILogDetail    { return logger.New(slog.Default(), "", nil) }
 func (t *TestContext) Get(string) interface{}       { return nil }
 func (t *TestContext) TransactionID() string        { return "" }
 func (t *TestContext) Param(string) string          { return "" }
@@ -48,7 +48,7 @@ func TestPing(t *testing.T) {
 	}
 
 	if w.Code != http.StatusOK {
-		t.Errorf("want %d, got %d", http.StatusOK, w.Code)
+		t.Errorf("want code %d, got code %d", http.StatusOK, w.Code)
 	}
 
 }

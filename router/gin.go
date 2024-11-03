@@ -32,7 +32,7 @@ func (c *MyContext) JSON(code int, v any) {
 	c.Context.JSON(code, v)
 }
 
-func (c *MyContext) Log(name string) *logger.Logger {
+func (c *MyContext) Log(name string) logger.ILogDetail {
 	route := c.FullPath()
 	method := c.Request.Method
 	device := c.Context.Request.UserAgent()

@@ -3,8 +3,8 @@ package model
 import "time"
 
 type Todo struct {
-	ID        string     `gorm:"primarykey" json:"id" bson:"id"`
-	Title     string     `json:"text" binding:"required"`
+	ID        string     `gorm:"primarykey" json:"id,omitempty" bson:"id"`
+	Title     string     `json:"text,omitempty" binding:"required"`
 	Href      string     `json:"href,omitempty"`
 	CreatedAt time.Time  `json:"-" bson:"created_at,omitempty"`
 	UpdatedAt time.Time  `json:"-" bson:"updated_at,omitempty"`
