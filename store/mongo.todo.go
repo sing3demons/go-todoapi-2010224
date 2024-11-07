@@ -46,51 +46,21 @@ func (g *MongoStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Tod
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	var todos []model.Todo
-	filter := bson.D{
-		{Key: "deleted_at", Value: nil},
-	}
+	node := "mongo"
+	cmd := "list_todo"
+	filter := g.buildFilter(opt)
+	opts := g.buildFindOptions(opt)
 
-	if opt.SearchItem != nil {
-		for k, v := range opt.SearchItem {
-			filter = append(filter, bson.E{Key: k, Value: v})
-		}
-	}
-
-	opts := &options.FindOptions{}
-	opts.Sort = bson.D{{Key: "created_at", Value: -1}}
-
-	if opt.SelectItem != nil {
-		projection = bson.D{}
-		for _, v := range opt.SelectItem {
-			projection = append(projection, bson.E{Key: v, Value: 1})
-		}
-
-		opts.Projection = projection
-	}
-
-	if opt.SortItem != nil {
-		opts.Sort = opt.SortItem
-	}
-
-	if opt.SortItem != nil {
-		for k, v := range opt.SortItem {
-			if v == "asc" {
-				opts.Sort = bson.D{{Key: k, Value: 1}}
-			} else {
-				opts.Sort = bson.D{{Key: k, Value: -1}}
-			}
-		}
-	}
-
-	logger.AddOutput("mongo", "list_todo", opt).End()
+	logger.AddOutput(node, cmd, opt).End()
 
 	cur, err := g.Collection.Find(ctx, filter, opts)
 	if err != nil {
-		logger.AddError("mongo", "list_todo", "output", nil, err)
+		logger.AddError(node, cmd, "output", nil, err)
 		return nil, err
 	}
 
 	if err := cur.All(ctx, &todos); err != nil {
+		logger.AddError(node, cmd, "output", nil, err)
 		return nil, err
 	}
 
@@ -103,6 +73,37 @@ func (g *MongoStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Tod
 	logger.AddInput("mongo", "list_todo", todos)
 
 	return todos, nil
+}
+
+func (g *MongoStore) buildFilter(opt FindOption) bson.D {
+	filter := bson.D{{Key: "deleted_at", Value: nil}}
+	if opt.SearchItem != nil {
+		for k, v := range opt.SearchItem {
+			filter = append(filter, bson.E{Key: k, Value: v})
+		}
+	}
+	return filter
+}
+
+func (g *MongoStore) buildFindOptions(opt FindOption) *options.FindOptions {
+	opts := &options.FindOptions{Sort: bson.D{{Key: "created_at", Value: -1}}}
+	if opt.SelectItem != nil {
+		projection := bson.D{}
+		for _, v := range opt.SelectItem {
+			projection = append(projection, bson.E{Key: v, Value: 1})
+		}
+		opts.Projection = projection
+	}
+	if opt.SortItem != nil {
+		for k, v := range opt.SortItem {
+			if v == "asc" {
+				opts.Sort = bson.D{{Key: k, Value: 1}}
+			} else {
+				opts.Sort = bson.D{{Key: k, Value: -1}}
+			}
+		}
+	}
+	return opts
 }
 
 func (g *MongoStore) Delete(id string, logger logger.ILogDetail) error {

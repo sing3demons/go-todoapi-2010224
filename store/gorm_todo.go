@@ -75,14 +75,17 @@ func (g *GormStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Todo
 func (g *GormStore) Delete(id string, logger logger.ILogDetail) error {
 	node := "gorm"
 	cmd := "delete_todo"
-	logger.AddOutput(node, cmd, id).End()
-	r := g.db.Delete(&model.Todo{}, id)
+	query := "id = ?"
+	logger.AddOutput(node, cmd, map[string]any{
+		"query": strings.Replace(query, "?", id, 1),
+	}).End()
+	r := g.db.Where(query, id).Delete(&model.Todo{})
 
 	if r.Error != nil {
 		logger.AddError(node, cmd, "output", nil, r.Error)
 		return r.Error
 	}
-	logger.AddOutput(node, cmd, r).End()
+	logger.AddOutput(node, cmd, r.RowsAffected).End()
 	return nil
 }
 

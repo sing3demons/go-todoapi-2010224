@@ -7,3 +7,6 @@ Content-Type: application/json
 {
     "text": "Learn Go"
 }
+
+###
+DELETE http://localhost:8080/todo/6a70a2f0-857b-495a-90a4-839ed902f72b HTTP/1.1
