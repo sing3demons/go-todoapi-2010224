@@ -22,19 +22,17 @@ func NewMongoStore(db *mongo.Collection) *MongoStore {
 }
 
 func (g *MongoStore) Create(todo *model.Todo, logger logger.ILogDetail) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	logger.AddOutput("mongo", "create_todo", map[string]interface{}{
-		"body": *todo,
-	})
 	todo.ID = primitive.NewObjectID().Hex()
 	todo.CreatedAt = time.Now()
 	todo.UpdatedAt = time.Now()
 	todo.DeletedAt = nil
-	_, err := g.Collection.InsertOne(ctx, todo)
-	logger.AddInput("mongo", "create_todo", todo)
 
-	return err
+	store := Store{
+		mongo:  g.Collection,
+		logger: logger,
+	}
+
+	return store.Create("create_todo", "todo", "InsertOne", todo)
 }
 
 var projection = bson.D{

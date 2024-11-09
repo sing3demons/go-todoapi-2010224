@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sing3demons/todoapi/logger"
@@ -20,18 +21,15 @@ func NewGormStore(db *gorm.DB) *GormStore {
 }
 
 func (g *GormStore) Create(todo *model.Todo, logger logger.ILogDetail) error {
-	logger.AddOutput("gorm", "create_todo", map[string]interface{}{
-		"body": *todo,
-	}).End()
-
-	todo.ID = uuid.New().String()
-	if err := g.db.Create(todo).Error; err != nil {
-		logger.AddError("gorm", "create_todo", "output", todo, err)
-		return err
+	store := Store{
+		sql:    g.db,
+		logger: logger,
 	}
 
-	logger.AddInput("gorm", "create_todo", todo)
-	return nil
+	todo.ID = uuid.New().String()
+	todo.CreatedAt = time.Now()
+	todo.UpdatedAt = time.Now()
+	return store.Create("create_todo", "todo", "create", todo)
 }
 
 func (g *GormStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Todo, error) {
