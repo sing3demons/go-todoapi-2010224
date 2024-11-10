@@ -35,32 +35,21 @@ func (g *MongoStore) Create(todo *model.Todo, logger logger.ILogDetail) error {
 	return store.Create("create_todo", "todo", "InsertOne", todo)
 }
 
-var projection = bson.D{
-	{Key: "id", Value: 1},
-	{Key: "title", Value: 1},
-}
-
 func (g *MongoStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Todo, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
 	var todos []model.Todo
-	node := "mongo"
 	cmd := "list_todo"
-	filter := g.buildFilter(opt)
-	opts := g.buildFindOptions(opt)
 
-	logger.AddOutput(node, cmd, opt).End()
+	store := Store{
+		mongo:  g.Collection,
+		logger: logger,
+	}
 
-	cur, err := g.Collection.Find(ctx, filter, opts)
+	data, err := store.List(cmd, "todos", opt, todos)
 	if err != nil {
-		logger.AddError(node, cmd, "output", nil, err)
 		return nil, err
 	}
 
-	if err := cur.All(ctx, &todos); err != nil {
-		logger.AddError(node, cmd, "output", nil, err)
-		return nil, err
-	}
+	todos = data.([]model.Todo)
 
 	for i := range todos {
 		if todos[i].ID != "" {
@@ -71,37 +60,6 @@ func (g *MongoStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Tod
 	logger.AddInput("mongo", "list_todo", todos)
 
 	return todos, nil
-}
-
-func (g *MongoStore) buildFilter(opt FindOption) bson.D {
-	filter := bson.D{{Key: "deleted_at", Value: nil}}
-	if opt.SearchItem != nil {
-		for k, v := range opt.SearchItem {
-			filter = append(filter, bson.E{Key: k, Value: v})
-		}
-	}
-	return filter
-}
-
-func (g *MongoStore) buildFindOptions(opt FindOption) *options.FindOptions {
-	opts := &options.FindOptions{Sort: bson.D{{Key: "created_at", Value: -1}}}
-	if opt.SelectItem != nil {
-		projection := bson.D{}
-		for _, v := range opt.SelectItem {
-			projection = append(projection, bson.E{Key: v, Value: 1})
-		}
-		opts.Projection = projection
-	}
-	if opt.SortItem != nil {
-		for k, v := range opt.SortItem {
-			if v == "asc" {
-				opts.Sort = bson.D{{Key: k, Value: 1}}
-			} else {
-				opts.Sort = bson.D{{Key: k, Value: -1}}
-			}
-		}
-	}
-	return opts
 }
 
 func (g *MongoStore) Delete(id string, logger logger.ILogDetail) error {
@@ -134,9 +92,7 @@ func (g *MongoStore) FindOne(id string, logger logger.ILogDetail) (*model.Todo, 
 		{Key: "deleted_at", Value: nil},
 		{Key: "id", Value: id},
 	}
-	opts := &options.FindOneOptions{
-		Projection: projection,
-	}
+	opts := &options.FindOneOptions{}
 	err := g.Collection.FindOne(ctx, filter, opts).Decode(&todo)
 	if err != nil {
 		return nil, err

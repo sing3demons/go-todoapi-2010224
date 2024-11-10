@@ -10,3 +10,6 @@ Content-Type: application/json
 
 ###
 DELETE http://localhost:8080/todo/6a70a2f0-857b-495a-90a4-839ed902f72b HTTP/1.1
+
+###
+GET http://localhost:8080/todo/672ed3279db8ace2c4402f34 HTTP/1.1

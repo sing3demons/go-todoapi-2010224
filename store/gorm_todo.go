@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -34,31 +33,18 @@ func (g *GormStore) Create(todo *model.Todo, logger logger.ILogDetail) error {
 
 func (g *GormStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Todo, error) {
 	var todos []model.Todo
-	var conds []interface{}
-	if opt.SearchItem != nil {
-		for k, v := range opt.SearchItem {
-			conds = append(conds, fmt.Sprintf("%s = ?", k), v)
-		}
+
+	store := Store{
+		sql:    g.db,
+		logger: logger,
 	}
 
-	var order []string
-	if opt.SortItem != nil {
-		for k, v := range opt.SortItem {
-			order = append(order, fmt.Sprintf("%s %s", k, v))
-		}
-	}
-
-	selectTodo := []string{}
-	if opt.SelectItem != nil {
-		selectTodo = opt.SelectItem
-	}
-	logger.AddOutput("gorm", "list_todo", opt).End()
-
-	r := g.db.Select(selectTodo).Order(strings.Join(order, ",")).Find(&todos, conds...)
-	if err := r.Error; err != nil {
-		logger.AddError("gorm", "list_todo", "output", nil, err)
+	data, err := store.List("list_todo", "todos", opt, todos)
+	if err != nil {
 		return nil, err
 	}
+
+	todos = data.([]model.Todo)
 
 	for i := range todos {
 		if todos[i].ID != "" {
@@ -66,7 +52,6 @@ func (g *GormStore) List(opt FindOption, logger logger.ILogDetail) ([]model.Todo
 		}
 	}
 
-	logger.AddInput("gorm", "list_todo", todos)
 	return todos, nil
 }
 

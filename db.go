@@ -32,14 +32,12 @@ func connectDB() *gorm.DB {
 }
 
 func connectMongo() *mongo.Client {
-	loggerOptions := options.
-		Logger().
-		SetComponentLevel(options.LogComponentCommand, options.LogLevelDebug)
-
+	loggerOptions := options.Logger().SetComponentLevel(options.LogComponentCommand, options.LogLevelDebug)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	uri := os.Getenv("MONGO_URI")
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri).SetLoggerOptions(loggerOptions))
+	// client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Error("failed to connect mongodb", slog.Any("error", err))
 	}
