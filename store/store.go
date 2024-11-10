@@ -11,6 +11,7 @@ import (
 	"github.com/sing3demons/todoapi/logger"
 	"github.com/sing3demons/todoapi/model"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gorm.io/gorm"
@@ -161,7 +162,7 @@ func (tx *Store) listFromMongo(commandName, name string, opt FindOption, data an
 }
 
 func buildMongoFilter(opt FindOption) bson.D {
-	filter := bson.D{{Key: "deleted_at", Value: nil}}
+	filter := bson.D{{Key: "deleted_at", Value: primitive.Null{}}}
 	if opt.SearchItem != nil {
 		for k, v := range opt.SearchItem {
 			filter = append(filter, bson.E{Key: k, Value: v})
